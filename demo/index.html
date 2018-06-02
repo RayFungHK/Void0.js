@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,minimum-scale=1.0,initial-scale=1.0,user-scalable=yes,maximum-scale=1.0">
+  <title>ModulerJS</title>
+  <script type="text/javascript" src="../src/Moduler.js"></script>
+</head>
+<body>
+  <script>
+    Moduler.config({
+      plugin: '../plugin'
+    });
+    let hello = Moduler.load('test');
+    console.log(hello);
+    hello();
+  </script>
+</body>
+</html>
