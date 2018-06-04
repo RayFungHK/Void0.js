@@ -16,8 +16,15 @@
 		indexOf: ary.indexOf,
 		forEach: ary.forEach,
 		some: ary.some,
-		length: 0
+		length: 0,
+    get function() {
+      console.log();
+      return 1;
+    }
 	};
+
+  let test = new Package();
+  test.what();
 
   function select(needle, object) {
     let packer = {};
