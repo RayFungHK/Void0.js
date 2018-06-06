@@ -10,15 +10,13 @@
   <script>
   function doSomething1(){
     console.log('doSomething1 start')
-    return new Promise(function(resolve, reject) {
+    return new Moduler.Promise(function(resolve, reject) {
         console.log('doSomething1 end')
         resolve(1)
-        return 2;
     })
   }
 
   function doSomething2(v){
-    console.log(v)
     console.log('doSomething2')
     return 2
   }

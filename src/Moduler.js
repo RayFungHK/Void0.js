@@ -34,6 +34,7 @@
 
   };
 
+  // Moduler Function
   fn = {
 		isDefined: function(object) {
 			return (typeof object != 'undefined');
@@ -140,260 +141,6 @@
 		}
   };
 
-  // Ajax
-  var ajaxSettings = {
-		cached: {},
-		default: {
-			url: location.href,
-			type: 'GET',
-			processData: true,
-			async: true,
-			contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-
-			/* Default Null */
-			timeout: 0,
-			data: null,
-			dataType: null,
-			username: null,
-			password: null,
-			cache: null,
-			headers: {},
-
-			accepts: {
-				'*': allType,
-				text: 'text/plain',
-				html: 'text/html',
-				xml: 'application/xml, text/xml',
-				json: 'application/json, text/javascript'
-			},
-			converters: {
-				'* text': win.String,
-				'text html': true,
-				'text json': fn.parseJSON,
-				'text xml': fn.parseXML
-			}
-		}
-	};
-	ajaxSettings._default = fn.clone(ajaxSettings.default);
-  fn.ajax = function(url, settings) {
-		if (fn.isPlainObject(url)) {
-			settings = url;
-			url = settings.url;
-		}
-		if (!fn.isPlainObject(settings)) {
-			settings = ajaxSettings.default;
-		} else {
-			fn.each(ajaxSettings.default, function(key, val) {
-				if (key != 'headers' && key != 'accepts' && key != 'converters') {
-					if (!fn.isDefined(settings[key])) {
-						settings[key] = val;
-					}
-				}
-			});
-		}
-		url = url || ajaxSettings.default.url;
-
-		var thread = fn.Thread(function() {
-			var xmlHttp = null,
-				action = this,
-				converters = {};
-
-			action.wait();
-
-			// settings.beforeSend
-			if (fn.isCallable(settings.beforeSend)) {
-				if (!settings.beforeSend.call(xmlHttp, xmlHttp)) {
-					action.reject();
-				}
-			}
-
-			function callComplete() {
-				// settings.complete
-				if (!fn.isIterator(settings.complete)) {
-					settings.complete = [settings.complete];
-				}
-				fn.each(settings.complete, function() {
-					if (fn.isCallable(this)) {
-						this.call(this, xmlHttp, xmlHttp.statusText);
-					}
-				});
-			}
-
-			// settings.crossDomain
-			if (settings.crossDomain || settings.dataType == 'script') {
-				if (settings.dataType != 'script') {
-					// settings.jsonp
-					var jsonpFunc = '';
-					if (settings.jsonp && fn.isString(settings.jsonp)) {
-						jsonpFunc = settings.jsonp;
-					} else {
-						jsonpFunc = Math.random().toString(36).replace(/\d/g, '').slice(2, 7);
-						if (!win._ajaxCallback) {
-							win._ajaxCallback = {};
-						}
-						win._ajaxCallback[jsonpFunc] = (fn.isCallable(settings.jsonpCallback)) ? settings.jsonpCallback : action.resume;
-						jsonpFunc = 'window._ajaxCallback.' + jsonpFunc;
-					}
-					url = url + ((/\?/).test(url) ? '&' : '?') + 'callback=' + jsonpFunc;
-				}
-
-				var tag = doc.createElement('script');
-				// settings.data
-				if (settings.data) {
-					settings.data = fn.param(settings.data);
-					url += '&' + settings.data;
-				}
-
-				// settings.scriptCharset
-				if (settings.scriptCharset) {
-					tag.charset = settings.scriptCharset;
-				}
-
-				tag.src = url;
-				doc.getElementsByTagName('head')[0].appendChild(tag);
-				tag.onload = function() {
-					callComplete();
-				};
-			} else {
-				xmlHttp = new XMLHttpRequest();
-				// settings.method
-				if (!settings.method) {
-					settings.method = settings.method || settings.type || 'GET';
-				}
-				settings.method = settings.method.toUpperCase();
-
-				// settings.data
-				if (settings.data) {
-					if (settings.processData && !fn.isString(settings.data) && (settings.method == 'GET' || settings.data.constructor != FormData)) {
-						settings.data = fn.param(settings.data);
-					}
-					if (settings.method == 'GET') {
-						url += ((/\?/).test(url) ? '&' : '?') + settings.data;
-					}
-				}
-
-				// settings.cache
-				if (!settings.cache && (!settings.dataType || settings.dataType == 'jsonp' || settings.dataType == 'script')) {
-					url = url + ((/\?/).test(url) ? '&' : '?') + (new Date()).getTime();
-				}
-
-				if (!fn.isDefined(settings.async)) {
-					settings.async = true;
-				}
-				xmlHttp.open(settings.method, url, settings.async, settings.username, settings.password);
-
-				// settings.timeout
-				if (parseInt(settings.timeout) > 0) {
-					xmlHttp.timeoutTimer = setTimeout(function() {
-						xmlHttp.abort('timeout');
-					}, parseInt(settings.timeout));
-				}
-
-				// settings.accepts
-				if (!fn.isPlainObject(settings.accepts)) {
-					settings.accepts = {};
-				}
-				fn.extend(settings.accepts, ajaxSettings.default.accepts);
-				xmlHttp.setRequestHeader('Accept', (settings.dataType && settings.accepts[settings.dataType]) ? settings.accepts[settings.dataType] + ((settings.dataType !== '*') ? ', ' + allType + '; q=0.01' : '') : settings.accepts['*']);
-
-				// settings.contentType
-				if (settings.data && settings.data.constructor == FormData) {
-					settings.contentType = 'multipart/form-data; charset=UTF-8';
-				} else {
-					if (!fn.isDefined(settings.contentType)) {
-						settings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
-					}
-					if (settings.contentType !== false) {
-						xmlHttp.setRequestHeader('Content-Type', settings.contentType);
-					}
-				}
-
-				// settings.converters
-				if (fn.isPlainObject(settings.converters)) {
-					fn.each(settings.converters, function(name, callback) {
-						name = name.trim();
-						if (/[\w-]+\s[\w-]/.test(name) && (fn.isCallable(callback) || callback === true)) {
-							converters[name] = callback;
-						}
-					});
-				}
-				fn.extend(converters, ajaxSettings.default.converters);
-
-				// settings.headers
-				if (fn.isPlainObject(settings.headers)) {
-					fn.each(settings.headers, function(name, value) {
-						xmlHttp.setRequestHeader(name.trim(), value);
-					});
-				}
-
-				// settings.mimeType
-				if (settings.mimeType && fn.isString(settings.mimeType)) {
-					xmlHttp.overrideMimeType(settings.mimeType);
-				}
-
-				xmlHttp.onreadystatechange = function() {
-					if (xmlHttp.readyState != 4) return;
-
-					// settings.statusCallback
-					if (fn.isCallable(settings.statusCallback)) {
-						if (settings.statusCallback[xmlHttp.status]) {
-							settings.statusCallback[xmlHttp.status].call(xmlHttp);
-						}
-					}
-					if (xmlHttp.status == 200) {
-						var header = xmlHttp.getResponseHeader('Content-Type'),
-							delimited = header.split(';')[0].split('/'),
-							contentType = delimited[0],
-							outputFormat = delimited[1],
-							response = xmlHttp.response,
-							convertName = contentType + ' ' + ((settings.dataType) ? settings.dataType : outputFormat),
-							modifiedCheck = {};
-
-						// settings.ifModified
-						if (settings.ifModified) {
-							modifiedCheck.etag = xmlHttp.getResponseHeader('ETag');
-							modifiedCheck.lastModified = xmlHttp.getResponseHeader('Last-Modified');
-							if (ajaxSettings.cached[url]) {
-								if (ajaxSettings.cached[url].lastModified != modifiedCheck.lastModified || (modifiedCheck.etag && ajaxSettings.cached[url].eTag == modifiedCheck.etag)) {
-									ajaxSettings.cached[url] = modifiedCheck;
-								} else {
-									action.reject({
-										status: 304,
-										text: 'Not modified'
-									});
-									callComplete();
-									return;
-								}
-							}
-						}
-
-						// settings.afterDataReceive
-						if (fn.isCallable(settings.afterDataReceive)) {
-							response = settings.afterDataReceive.call(response, response);
-						}
-
-						if (converters[convertName]) {
-							if (converters[convertName] !== true) {
-								response = converters[convertName](response);
-							}
-						}
-						action.resume(response);
-						callComplete();
-					} else {
-						action.reject({
-							status: xmlHttp.status,
-							text: xmlHttp.statusText
-						});
-						callComplete();
-					}
-				};
-
-				xmlHttp.send(settings.data);
-			}
-		});
-		return (settings.context) ? thread.resolveWith(settings.context) : thread.resolve();
-	};
-
   Moduler = fn.extend(Moduler, fn);
 
   function select(needle, object) {
@@ -414,53 +161,67 @@
   // Promises/A+
   // An open standard for sound, interoperable JavaScript promises
   // https://promisesaplus.com/
-  var context = {},
+  var promiseContext = {},
       internalParam = {
         state: 'pending',
         value: undefined,
         reason: undefined,
       };
 
+  /*
   fn.each([
     ['resolve', 'value', 'onFulfilled'],
     ['reject', 'reason', 'onRejected']
   ], function() {
-    context[this[0]] = function(promise, returns, callback) {
-      if (promise.state === 'pending') {
+    promiseContext[this[0]] = function(promise, returns, callback) {
+      if (fn.isCallable(callback)) {
+        var promiseReturn = callback(returns);
+        if (Moduler.Promise.isThenable(promiseReturn)) {
+          promiseReturn.then(function(value) {
+            promiseContext.resolve(promise, value, callback);
+          });
+        }
+      } else {
         promise[this[1]] = returns;
         promise.state = this[2];
       }
-
-      if (fn.isCallable(callback)) {
-        callback(promise[this[1]]);
-      }
     };
   });
+  */
+  promiseContext.resolve = function(promise, value) {
+    promise.state = 'onFulfilled';
+    promise.value = value;
+  };
 
-  Moduler.Promise = function(object) {
+  promiseContext.reject = function(promise, reason) {
+    promise.state = 'onRejected';
+    promise.reason = reason;
+  };
+
+  Moduler.Promise = function(callback) {
     var promise = {
           constructor: this,
           then: function(/* onFulfilled, onRejected */) {
-            var args = arguments;
+            var onFulfilled = arguments[0],
+                onRejected = arguments[1];
 
-            try {
-              if (promise.state === 'pending') {
-                if (fn.isCallable(object)) {
-                  object(function(value) {
-                    context.resolve(promise, value, args[0] || undefined);
-                  }, function(reason) {
-                    context.reject(promise, reason, args[1] || undefined);
-                  });
-                } else if (fn.isDefined(object)) {
+            if (fn.isCallable(callback)) {
+              callback(function(value) {
+                promiseContext.resolve(promise, value);
 
+                if (promise.state === 'pending') {
+                  if (fn.isDefined(onFulfilled)) {
+                    promise.value = onFulfilled(value);
+                  }
                 }
-              }
-            }
-            catch(e) {
-              context.reject(promise, e, args[1] || null);
+              }, function(reason) {
+                promiseContext.reject(promise, reason);
+              });
             }
 
-            return promise;
+            return new Moduler.Promise(function(resolve, reject) {
+              resolve(promise.value);
+            });
           },
           promise: function(obj) {
             return (obj != null) ? fn.extend(obj, promise) : promise;
@@ -472,29 +233,33 @@
     return promise;
   };
 
+  Moduler.Promise.isThenable = function(object) {
+    return fn.isDefined(object) && fn.isDefined(object.then) && fn.isCallable(object.then);
+  };
+
+  Moduler.Promise.resolve = function(value) {
+    return new Moduler.Promise(function(resolve) {
+      return resolve(value);
+    });
+  };
+  /*
   fn.each('resolve reject'.split(' '), function() {
-    var that = this;
-    Moduler.Promise[that] = function(value) {
+    var rsj = this;
+    Moduler.Promise[rsj] = function(value) {
       var promise;
-      if (fn.isDefined(value.then) && fn.isCallable(value.then)) {
-        var thenable = value,
-            promise = new Moduler.Promise(function(rs, rj) {
-              thenable.then(function(value) {
-                rs(value);
-              }, function(reason) {
-                rj(reason);
-              });
-            });
-        console.log(promise.then);
-        return promise.promise(thenable);
+      if (fn.isDefined(value) && fn.isDefined(value.then) && fn.isCallable(value.then)) {
+        // Chaining
+        new Moduler.Promise(value.then);
+        return value;
       } else {
         promise = new Moduler.Promise(function(rs, rj) {
-          ({resolve: rs, reject: rj})[that](value);
+          return ({resolve: rs, reject: rj})[rsj](value);
         });
       }
       return promise;
     };
   });
+  */
   Moduler.Promise.prototype = Moduler.Promise;
 
   Moduler.config = function(config) {
