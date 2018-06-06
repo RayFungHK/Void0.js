@@ -161,106 +161,182 @@
   // Promises/A+
   // An open standard for sound, interoperable JavaScript promises
   // https://promisesaplus.com/
-  var promiseContext = {},
-      internalParam = {
-        state: 'pending',
-        value: undefined,
-        reason: undefined,
-      };
+  Moduler.Promise = (function() {
+		var PromiseClass = function(executor) {
+			var promise = this;
 
-  /*
-  fn.each([
-    ['resolve', 'value', 'onFulfilled'],
-    ['reject', 'reason', 'onRejected']
-  ], function() {
-    promiseContext[this[0]] = function(promise, returns, callback) {
-      if (fn.isCallable(callback)) {
-        var promiseReturn = callback(returns);
-        if (Moduler.Promise.isThenable(promiseReturn)) {
-          promiseReturn.then(function(value) {
-            promiseContext.resolve(promise, value, callback);
-          });
-        }
-      } else {
-        promise[this[1]] = returns;
-        promise.state = this[2];
+			this.state = 'pending';
+			this.value = undefined;
+			this.task = [];
+
+      if (fn.isCallable(executor)) {
+				try {
+					// Executor
+					executor(
+						// onFulfilled
+						function(value) {
+							promiseContext.onFulfilled(promise, value);
+						},
+						// onRejected
+						function(reason) {
+							promiseContext.onRejected(promise, reason);
+						}
+					);
+				}
+				catch (e) {
+					// Throw Error
+					promiseContext.onRejected(promise, e);
+				}
       }
-    };
-  });
-  */
-  promiseContext.resolve = function(promise, value) {
-    promise.state = 'onFulfilled';
-    promise.value = value;
-  };
+		}
 
-  promiseContext.reject = function(promise, reason) {
-    promise.state = 'onRejected';
-    promise.reason = reason;
-  };
+    PromiseClass.prototype = {
+			then: function(onFulfilled, onRejected) {
+	      var promise = this,
+						storage = {
+							events: {},
+							promise: undefined,
+							transition: function(state, value) {
+								this.promise.state = state;
+								this.promise.value = value;
+							}
+						};
 
-  Moduler.Promise = function(callback) {
-    var promise = {
-          constructor: this,
-          then: function(/* onFulfilled, onRejected */) {
-            var onFulfilled = arguments[0],
-                onRejected = arguments[1];
+	      if (fn.isCallable(onFulfilled)) {
+					storage.events.fulFilled = onFulfilled;
+	      }
+	      if (fn.isCallable(onRejected)) {
+					storage.events.rejected = onRejected;
+	      }
 
-            if (fn.isCallable(callback)) {
-              callback(function(value) {
-                promiseContext.resolve(promise, value);
+	      storage.promise = new PromiseClass(function (onFulfilled, onRejected) {
 
-                if (promise.state === 'pending') {
-                  if (fn.isDefined(onFulfilled)) {
-                    promise.value = onFulfilled(value);
-                  }
-                }
-              }, function(reason) {
-                promiseContext.reject(promise, reason);
-              });
-            }
+				});
 
-            return new Moduler.Promise(function(resolve, reject) {
-              resolve(promise.value);
-            });
-          },
-          promise: function(obj) {
-            return (obj != null) ? fn.extend(obj, promise) : promise;
+	      this.task.push(storage);
+	      notify(this);
+
+	      return storage.promise;
+	    },
+
+			catch: function(onRejected) {
+				return this.then(undefined, onRejected);
+			}
+		};
+
+		PromiseClass.resolve = function(mixed) {
+			if (fn.isCallable(mixed)) {
+				mixed = mixed(promise);
+			}
+
+			if (mixed instanceof promise) {
+				return mixed;
+			}
+
+			var result = new this(function(onFulfilled, onRejected) {
+        resolvePromise({
+          onFulfilled: onFulfilled,
+          onRejected: onRejected
+        }, mixed);
+			});
+		};
+
+		PromiseClass.reject = function(reason) {
+			if (fn.isCallable(reason)) {
+				reason = reason(promise);
+			}
+
+			return new this(function(onFulfilled, onRejected) {
+				onRejected(reason);
+			});
+		};
+
+		var promiseContext = {
+			onFulfilled: function (promise, value) {
+				if (promise.state === 'pending') {
+					promise.state = 'fulFilled';
+					promise.value = value;
+	        notify();
+				}
+				return this;
+			},
+			onRejected: function (promise, reason) {
+				if (promise.state === 'pending') {
+					promise.state = 'rejected';
+	        notify();
+				}
+				return this;
+			}
+		};
+
+		function resolvePromise(promise, mixed) {
+			if (!fn.isCallable(mixed)) {
+				promise.onFulfilled(mixed);
+				return;
+			}
+
+			if (mixed instanceof promise) {
+				mixed.then(function (value) {
+					promise.onFulfilled(value);
+				}, function (reason) {
+					promise.onRejected(reason);
+				});
+				return;
+			}
+
+			if ('then' in mixed && fn.isCallable(mixed.then)) {
+				// Thenable
+				var state = 'pending';
+				try {
+					mixed.then(function(value) {
+						if (state === 'pending') {
+							state = 'fulFilled';
+							resolvePromise(promise, value);
+						}
+					}, function(reason) {
+						if (state === 'pending') {
+							state = 'rejected';
+							promise.onRejected(reason);
+						}
+					});
+				}
+				catch (e) {
+					if (state === 'pending') {
+						state = 'onError';
+						promise.onRejected(e);
+					}
+				}
+			} else {
+				promise.onFulfilled(mixed);
+			}
+		}
+
+		function notify(promise) {
+      if (promise.state !== 'pending') {
+        var tasks = promise.task;
+        promise.task = [];
+
+				fn.each(tasks, function() {
+					var storage = this,
+							promised = this.promise;
+
+					try {
+						if (!promise.state in storage.events) {
+							storage.transition(promise.state, promise.value);
+						} else {
+							var result = storage.events[promise.state](promise.value);
+							resolvePromise(promised, result);
+						}
+					}
+          catch (e) {
+            storage.transition('rejected', e);
           }
-        };
-
-    fn.extend(promise, internalParam);
-
-    return promise;
-  };
-
-  Moduler.Promise.isThenable = function(object) {
-    return fn.isDefined(object) && fn.isDefined(object.then) && fn.isCallable(object.then);
-  };
-
-  Moduler.Promise.resolve = function(value) {
-    return new Moduler.Promise(function(resolve) {
-      return resolve(value);
-    });
-  };
-  /*
-  fn.each('resolve reject'.split(' '), function() {
-    var rsj = this;
-    Moduler.Promise[rsj] = function(value) {
-      var promise;
-      if (fn.isDefined(value) && fn.isDefined(value.then) && fn.isCallable(value.then)) {
-        // Chaining
-        new Moduler.Promise(value.then);
-        return value;
-      } else {
-        promise = new Moduler.Promise(function(rs, rj) {
-          return ({resolve: rs, reject: rj})[rsj](value);
-        });
+				});
       }
-      return promise;
-    };
-  });
-  */
-  Moduler.Promise.prototype = Moduler.Promise;
+		}
+
+		return PromiseClass;
+	})();
 
   Moduler.config = function(config) {
     if (typeof config !== undefined) {
