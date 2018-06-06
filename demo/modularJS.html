@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,minimum-scale=1.0,initial-scale=1.0,user-scalable=yes,maximum-scale=1.0">
+  <title>ModulerJS</title>
+  <script type="text/javascript" src="../src/Moduler.js"></script>
+</head>
+<body>
+  <script>
+  function doSomething1(){
+    console.log('doSomething1 start')
+    return new Moduler.Promise(function(resolve, reject) {
+        console.log('doSomething1 end')
+        resolve(1)
+    })
+  }
+
+  function doSomething2(v){
+    console.log('doSomething2')
+    return 2
+  }
+
+  function finalThing(value){
+    console.log('finalThing')
+    console.log(value)
+    return 0
+  }
+
+  //第1種傳入參數
+  doSomething1().then(doSomething2).then(finalThing)
+/*
+  //第2種傳入參數
+  doSomething1().then(doSomething2()).then(finalThing)
+
+  //第3種傳入參數
+  doSomething1().then(function(){ doSomething2() }).then(finalThing)
+
+  //第3種傳入參數
+  doSomething1().then(function(){ return doSomething2() }).then(finalThing)
+  */
+  </script>
+</body>
+</html>
