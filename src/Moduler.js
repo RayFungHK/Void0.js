@@ -162,12 +162,12 @@
   // An open standard for sound, interoperable JavaScript promises
   // https://promisesaplus.com/
   Moduler.Promise = (function() {
-		var PromiseClass = function(executor) {
+    function PromiseClass(executor) {
 			var promise = this;
 
-			this.state = 'pending';
-			this.value = undefined;
-			this.task = [];
+      this.state = 'pending';
+      this.value = undefined;
+      this.tasks = [];
 
       if (fn.isCallable(executor)) {
 				try {
@@ -175,18 +175,20 @@
 					executor(
 						// onFulfilled
 						function(value) {
-							promiseContext.onFulfilled(promise, value);
+							promiseContext.fulFilled(promise, value);
 						},
 						// onRejected
 						function(reason) {
-							promiseContext.onRejected(promise, reason);
+							promiseContext.rejected(promise, reason);
 						}
 					);
 				}
 				catch (e) {
 					// Throw Error
-					promiseContext.onRejected(promise, e);
+					promiseContext.rejected(promise, e);
 				}
+      } else {
+        throw new TypeError('Promise resolver ' + executor + ' is not a function');
       }
 		}
 
@@ -202,18 +204,17 @@
 							}
 						};
 
-	      if (fn.isCallable(onFulfilled)) {
-					storage.events.fulFilled = onFulfilled;
-	      }
-	      if (fn.isCallable(onRejected)) {
-					storage.events.rejected = onRejected;
-	      }
+				storage.events.fulFilled = onFulfilled;
+				storage.events.rejected = onRejected;
 
+        // then must return a promise
+        // https://promisesaplus.com/#point-40
 	      storage.promise = new PromiseClass(function (onFulfilled, onRejected) {
 
 				});
 
-	      this.task.push(storage);
+	      this.tasks.push(storage);
+
 	      notify(this);
 
 	      return storage.promise;
@@ -234,9 +235,9 @@
 			}
 
 			var result = new this(function(onFulfilled, onRejected) {
-        resolvePromise({
-          onFulfilled: onFulfilled,
-          onRejected: onRejected
+        resolve({
+          fulFilled: onFulfilled,
+          rejected: onRejected
         }, mixed);
 			});
 		};
@@ -247,91 +248,159 @@
 			}
 
 			return new this(function(onFulfilled, onRejected) {
-				onRejected(reason);
+				rejected(reason);
 			});
 		};
 
 		var promiseContext = {
-			onFulfilled: function (promise, value) {
+			fulFilled: function (promise, value) {
 				if (promise.state === 'pending') {
 					promise.state = 'fulFilled';
 					promise.value = value;
-	        notify();
+	        notify(promise);
 				}
 				return this;
 			},
-			onRejected: function (promise, reason) {
+			rejected: function (promise, reason) {
+        console.log(reason);
 				if (promise.state === 'pending') {
 					promise.state = 'rejected';
-	        notify();
+					promise.value = reason;
+	        notify(promise);
 				}
 				return this;
 			}
 		};
 
-		function resolvePromise(promise, mixed) {
-			if (!fn.isCallable(mixed)) {
-				promise.onFulfilled(mixed);
+    // To run [[Resolve]](promise, x)
+    // https://promisesaplus.com/#point-47
+		function resolve(promise, mixed) {
+      // If promise and x refer to the same object, reject promise with a TypeError as the reason.
+      // https://promisesaplus.com/#point-48
+      if (promise === mixed) {
+        throw new TypeError('Promise and value not allow refer to the same object');
+      }
+
+      // If x is not an object or function, fulfill promise with x.
+      // https://promisesaplus.com/#point-64
+			if (!fn.isObject(mixed) && !fn.isCallable(mixed)) {
+				promiseContext.fulFilled(promise, mixed);
 				return;
 			}
 
+      // If x is a promise, adopt its state
+      // So we put the onFulfilled and onRejected callback to adopt its state, value and reason
+      // https://promisesaplus.com/#point-49
 			if (mixed instanceof promise) {
 				mixed.then(function (value) {
-					promise.onFulfilled(value);
+					promiseContext.fulFilled(promise, value);
 				}, function (reason) {
-					promise.onRejected(reason);
+					promiseContext.rejected(promise, reason);
 				});
+
 				return;
 			}
 
-			if ('then' in mixed && fn.isCallable(mixed.then)) {
-				// Thenable
-				var state = 'pending';
-				try {
-					mixed.then(function(value) {
-						if (state === 'pending') {
-							state = 'fulFilled';
-							resolvePromise(promise, value);
-						}
-					}, function(reason) {
-						if (state === 'pending') {
-							state = 'rejected';
-							promise.onRejected(reason);
-						}
-					});
-				}
-				catch (e) {
-					if (state === 'pending') {
-						state = 'onError';
-						promise.onRejected(e);
-					}
-				}
-			} else {
-				promise.onFulfilled(mixed);
+      // If x is an object or function
+      // https://promisesaplus.com/#point-53
+			if (fn.isObject(mixed) && 'then' in mixed) {
+				var then,
+            called = false;
+
+        try {
+          // Let then be x.then
+          // https://promisesaplus.com/#point-54
+          then = mixed.then;
+        }
+        catch(e) {
+          // If retrieving the property x.then results in a thrown exception e, reject promise with e as the reason.
+          // https://promisesaplus.com/#point-55
+          promiseContext.rejected(promise, e);
+        }
+
+        if (fn.isFunction(then)) {
+  				try {
+            then.call(
+              mixed,
+              function(value) {
+    						if (!called) {
+    							called = true;
+                  // If/when resolvePromise is called with a value y, run [[Resolve]](promise, y).
+                  // https://promisesaplus.com/#point-57
+    							resolve(promise, value);
+    						}
+    					}, function(reason) {
+    						if (called) {
+    							called = true;
+                  // If/when rejectPromise is called with a reason r, reject promise with r.
+                  // https://promisesaplus.com/#point-58
+    							promiseContext.rejected(promise, reason);
+    						}
+    					}
+            );
+  				}
+  				catch (e) {
+            // If resolvePromise or rejectPromise have been called, ignore it.
+            // https://promisesaplus.com/#point-61
+  					if (!called) {
+  						promiseContext.rejected(promise, e);
+  					}
+  				}
+        } else {
+          // If then is not a function, fulfill promise with x.
+          // https://promisesaplus.com/#point-63
+  				promiseContext.fulFilled(promise, mixed);
+  			}
 			}
 		}
 
 		function notify(promise) {
-      if (promise.state !== 'pending') {
-        var tasks = promise.task;
-        promise.task = [];
+      if (promise.state !== 'pending' && promise.tasks.length) {
+        // Marcotask
+        setTimeout(function() {
+          var tasks = promise.tasks;
+          promise.tasks = [];
 
-				fn.each(tasks, function() {
-					var storage = this,
-							promised = this.promise;
+          // Mircotask
+          var storage = undefined;
+          while (storage = tasks.shift()) {
+  					var promised = storage.promise;
 
-					try {
-						if (!promise.state in storage.events) {
-							storage.transition(promise.state, promise.value);
-						} else {
-							var result = storage.events[promise.state](promise.value);
-							resolvePromise(promised, result);
-						}
-					}
-          catch (e) {
-            storage.transition('rejected', e);
-          }
-				});
+  					try {
+  						if (!promise.state in storage.events) {
+  							storage.transition(promise.state, promise.value);
+  						} else {
+                var object = storage.events[promise.state];
+                if (fn.isCallable(object)) {
+                  // If either onFulfilled or onRejected returns a value x,
+                  // run the Promise Resolution Procedure [[Resolve]](promise2, x).
+                  // https://promisesaplus.com/#point-41
+                  try {
+      							var result = object(promise.value);
+      							resolve(promised, result);
+                  }
+                  catch(e) {
+                    // If either onFulfilled or onRejected throws an exception e,
+                    // promise2 must be rejected with e as the reason.
+                    // https://promisesaplus.com/#point-42
+                    promiseContext.rejected(promised, e);
+                  }
+                } else {
+                  // If onFulfilled is not a function and promise1 is fulFilled,
+                  // promise2 must be fulFilled with the same value as promise1.
+                  // https://promisesaplus.com/#point-43
+                  // If onRejected is not a function and promise1 is rejected,
+                  // promise2 must be rejected with the same reason as promise1.
+                  // https://promisesaplus.com/#point-44
+                  promiseContext[promise.state](promised, promise.value);
+                }
+  						}
+  					}
+            catch (e) {
+              storage.transition('rejected', e);
+            }
+  				}
+        });
       }
 		}
 
