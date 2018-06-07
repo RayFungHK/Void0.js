@@ -8,53 +8,10 @@
 </head>
 <body>
   <script>
-  var pp = new Promise(function(rs, rj) {
-    console.log(this);
-    rs(1);
-    return 3;
-  });
-  
-  // Resolving a thenable object
-  var p1 = Promise.resolve({
-    then: function(onFulfill, onReject) { onFulfill('fulfilled!'); }
-  });
-  console.log(p1 instanceof Promise) // true, object casted to a Promise
-
-  p1.then(function(v) {
-      console.log(v); // "fulfilled!"
-    }, function(e) {
-      // not called
-  });
-
-  // Thenable throws before callback
-  // Promise rejects
-  var thenable = { then: function(resolve) {
-    throw new TypeError('Throwing');
-    resolve('Resolving');
-  }};
-
-  var p2 = Promise.resolve(thenable);
-  p2.then(function(v) {
+  Promise.reject(new Error('fail')).then(function() {
     // not called
-  }, function(e) {
-    console.log(e); // TypeError: Throwing
-  });
-  setTimeout(function() {
-    console.log(p2);
-  }, 50);
-
-  // Thenable throws after callback
-  // Promise resolves
-  var thenable = { then: function(resolve) {
-    resolve('Resolving');
-    throw new TypeError('Throwing');
-  }};
-
-  var p3 = Promise.resolve(thenable);
-  p3.then(function(v) {
-    console.log(v); // "Resolving"
-  }, function(e) {
-    // not called
+  }, function(error) {
+    console.log(error); // Stacktrace
   });
   </script>
 </body>

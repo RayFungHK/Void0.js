@@ -7,48 +7,15 @@
   <script type="text/javascript" src="../src/Moduler.js"></script>
 </head>
 <body>
+  <div></div>
   <script>
-  // Resolving a thenable object
-  var p1 = Moduler.Promise.resolve({
-    then: function(onFulfill, onReject) { onFulfill('fulfilled!'); }
-  });
-  console.log(p1 instanceof Moduler.Promise) // true, object casted to a Moduler.Promise
+  var $ = Moduler;
+  $.Ajax('./example.jsonp', {
+    jsonpCallback: 'jsonp'
+  }).then(function(data) {
 
-  p1.then(function(v) {
-      console.log(v); // "fulfilled!"
-    }, function(e) {
-      // not called
-  });
-
-  // Thenable throws before callback
-  // Moduler.Promise rejects
-  var thenable = { then: function(resolve) {
-    throw new TypeError('Throwing');
-    resolve('Resolving');
-  }};
-
-  var p2 = Moduler.Promise.resolve(thenable);
-  p2.then(function(v) {
-    // not called
-  }, function(e) {
-    console.log(e); // TypeError: Throwing
-  });
-  setTimeout(function() {
-    console.log(p2);
-  }, 50);
-
-  // Thenable throws after callback
-  // Moduler.Promise resolves
-  var thenable = { then: function(resolve) {
-    resolve('Resolving');
-    throw new TypeError('Throwing');
-  }};
-
-  var p3 = Moduler.Promise.resolve(thenable);
-  p3.then(function(v) {
-    console.log(v); // "Resolving"
-  }, function(e) {
-    // not called
+  }, function(error) {
+    console.log(error); // Stacktrace
   });
   </script>
 </body>
