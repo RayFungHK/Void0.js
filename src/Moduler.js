@@ -175,7 +175,7 @@
 					executor(
 						// onFulfilled
 						function(value) {
-							promiseContext.fulFilled(promise, value);
+							resolvePromise(promise, value);
 						},
 						// onRejected
 						function(reason) {
@@ -226,9 +226,8 @@
 				return mixed;
 			}
 
-			return new PromiseClass(function(resolve, reject) {
-        // Resolve
-        resolve(mixed);
+			return new PromiseClass(function(onFulfilled, reject) {
+        onFulfilled(mixed)
 			});
 		};
 
@@ -263,7 +262,7 @@
 
     // To run [[Resolve]](promise, x)
     // https://promisesaplus.com/#point-47
-		function resolve(promise, mixed) {
+		function resolvePromise(promise, mixed) {
       // If promise and x refer to the same object, reject promise with a TypeError as the reason.
       // https://promisesaplus.com/#point-48
       if (promise === mixed) {
@@ -309,6 +308,7 @@
 
         if (fn.isCallable(then)) {
   				try {
+						// Call this as x, we assume it is a promise
             then.call(
               mixed,
               function(value) {
@@ -316,7 +316,7 @@
     							called = true;
                   // If/when resolvePromise is called with a value y, run [[Resolve]](promise, y).
                   // https://promisesaplus.com/#point-57
-    							resolve(promise, value);
+    							resolvePromise(promise, value);
     						}
     					}, function(reason) {
     						if (called) {
@@ -351,9 +351,9 @@
           promise.tasks = [];
 
           // Mircotask
-          var microtask = undefined;
+          var microtask;
           while (microtask = mircotaskList.shift()) {
-  					var promised = microtask.promise;
+  					var forkPromise = microtask.promise;
 
 						if (!promise.state in microtask.events) {
 							microtask.transition(promise.state, promise.value);
@@ -364,13 +364,14 @@
                   // If either onFulfilled or onRejected returns a value x,
                   // run the Promise Resolution Procedure [[Resolve]](promise2, x).
                   // https://promisesaplus.com/#point-41
-                  resolve(promised, object(promise.value));
+									var result = object(promise.value);
+                  resolvePromise(forkPromise, result);
                 }
                 catch(e) {
                   // If either onFulfilled or onRejected throws an exception e,
                   // promise2 must be rejected with e as the reason.
                   // https://promisesaplus.com/#point-42
-                  promiseContext.rejected(promised, e);
+                  promiseContext.rejected(forkPromise, e);
                 }
               } else {
                 // If onFulfilled is not a function and promise1 is fulFilled,
@@ -379,7 +380,7 @@
                 // If onRejected is not a function and promise1 is rejected,
                 // promise2 must be rejected with the same reason as promise1.
                 // https://promisesaplus.com/#point-44
-                promiseContext[promise.state](promised, promise.value);
+                promiseContext[promise.state](forkPromise, promise.value);
               }
 						}
   				}

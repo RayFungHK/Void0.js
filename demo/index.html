@@ -8,6 +8,12 @@
 </head>
 <body>
   <script>
+  var pp = new Promise(function(rs, rj) {
+    console.log(this);
+    rs(1);
+    return 3;
+  });
+  
   // Resolving a thenable object
   var p1 = Promise.resolve({
     then: function(onFulfill, onReject) { onFulfill('fulfilled!'); }
