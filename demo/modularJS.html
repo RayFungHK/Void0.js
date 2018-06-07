@@ -10,10 +10,10 @@
   <div></div>
   <script>
   var $ = Moduler;
-  $.Ajax('./example.jsonp', {
-    jsonpCallback: 'jsonp'
+  var p = $.ajax('./example.json', {
+    dataType: 'json'
   }).then(function(data) {
-
+    console.log(data);
   }, function(error) {
     console.log(error); // Stacktrace
   });

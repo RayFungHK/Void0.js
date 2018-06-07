@@ -17,6 +17,7 @@
   		some = ary.some,
 
 			container = doc.createElement('div'),
+			iframe = doc.createElement('iframe'),
 
       // Regex
       regexConstructor = /^\[object .+?Constructor\]$/,
@@ -214,6 +215,31 @@
 			} else {
 				return object;
 			}
+		},
+
+		parseJSON: function(text) {
+			if (!text || !fn.isString(text)) {
+				return null;
+			}
+
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				return null;
+			}
+		},
+
+		parseXML: function(text) {
+			var parser;
+			if (!text || !fn.isString(text)) {
+				return null;
+			}
+			try {
+				parser = new DOMParser();
+			} catch ( e ) {
+				parser = undefined;
+			}
+			return (!parser || (parser = parser.parseFromString(text, 'text/xml')).getElementsByTagName('parsererror').length) ? null : parser;
 		}
   };
 
@@ -259,6 +285,21 @@
 		return ElementCollectionClass;
 	})();
 
+	function buildHTML(html, source) {
+		container.innerHTML = selector;
+		if (fn.isIterable(source)) {
+			fn.each(container.children, function() {
+				source.push(this);
+			});
+			container.innerHTML = '';
+			return source;
+		} else {
+			var elements = ary.slice.call(container.children);
+			container.innerHTML = '';
+			return elements;
+		}
+	}
+
 	function collectElements(selector, context, source) {
 		context = (context && context.nodeType && context.querySelectorAll) ? context : doc;
 		if (fn.isString(selector)) {
@@ -266,11 +307,7 @@
 			if (selector) {
 				// If selector is a DOM string
 				if (/^<.+>$/.test(selector)) {
-					container.innerHTML = selector;
-					fn.each(container.children, function() {
-						source.push(this);
-					});
-					container.innerHTML = '';
+					buildHTML(selector, source);
 				} else {
 					fn.each(context.querySelectorAll(selector), function() {
 						if (!this._added) {
@@ -512,6 +549,10 @@
           // https://promisesaplus.com/#point-63
   				promiseContext.fulFilled(promise, mixed);
   			}
+			} else {
+				// If x is not thenable, fulfill promise with x.
+				// https://promisesaplus.com/#point-64
+				promiseContext.fulFilled(promise, mixed);
 			}
 		}
 
@@ -563,7 +604,7 @@
 		return PromiseClass;
 	})();
 
-	Moduler.Ajax = (function() {
+	Moduler.ajax = (function() {
 		var ajaxSettings = {
 				cached: {},
 				default: {
@@ -632,16 +673,18 @@
 
 				// settings.crossDomain
 				if (settings.crossDomain || settings.dataType === 'script') {
-					if (settings.dataType !== 'script') {
+					if (settings.dataType === 'script') {
 						// settings.jsonp
-						var jsonpFunc = '';
+						var jsonpFunc,
+								jsonpCallback;
+
 						if (settings.jsonp && fn.isString(settings.jsonp)) {
 							jsonpFunc = settings.jsonp;
 						} else {
-							jsonpFunc = Math.random().toString(36).replace(/\d/g, '').slice(2, 7);
 							if (!fn.isDefined(win._ajaxCallback)) {
 								win._ajaxCallback = {};
 							}
+							jsonpFunc = Math.random().toString(36).replace(/\d/g, '').slice(2, 7);
 
 							win._ajaxCallback[jsonpFunc] = function(data) {
 								if (fn.isCallable(settings.jsonpCallback)) {
@@ -668,7 +711,7 @@
 					}
 
 					script.src = url;
-					doc.getElementsByTagName('head')[0].appendChild(tag);
+					doc.getElementsByTagName('head')[0].appendChild(script);
 					script.onload = function() {
 						onCompleted();
 					};
