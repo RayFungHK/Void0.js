@@ -8,38 +8,48 @@
 </head>
 <body>
   <script>
-  var time = 0;
-  function doSomething1(){
-    console.log('doSomething1 start')
-    return new Promise(function(resolve, reject) {
-        console.log('doSomething1 end')
-        resolve(1)
-    })
-  }
+  // Resolving a thenable object
+  var p1 = Promise.resolve({
+    then: function(onFulfill, onReject) { onFulfill('fulfilled!'); }
+  });
+  console.log(p1 instanceof Promise) // true, object casted to a Promise
 
-  function doSomething2(v){
-    console.log('doSomething2')
-    return 2
-  }
+  p1.then(function(v) {
+      console.log(v); // "fulfilled!"
+    }, function(e) {
+      // not called
+  });
 
-  function finalThing(value){
-    console.log('finalThing')
-    console.log(value)
-    return 0
-  }
+  // Thenable throws before callback
+  // Promise rejects
+  var thenable = { then: function(resolve) {
+    throw new TypeError('Throwing');
+    resolve('Resolving');
+  }};
 
-  //第1種傳入參數
-  doSomething1().then(doSomething2).then(finalThing)
+  var p2 = Promise.resolve(thenable);
+  p2.then(function(v) {
+    // not called
+  }, function(e) {
+    console.log(e); // TypeError: Throwing
+  });
+  setTimeout(function() {
+    console.log(p2);
+  }, 50);
 
-  //第2種傳入參數
-  doSomething1().then(doSomething2()).then(finalThing)
+  // Thenable throws after callback
+  // Promise resolves
+  var thenable = { then: function(resolve) {
+    resolve('Resolving');
+    throw new TypeError('Throwing');
+  }};
 
-  //第3種傳入參數
-  doSomething1().then(function(){ doSomething2() }).then(finalThing)
-
-  //第3種傳入參數
-  doSomething1().then(function(){ return doSomething2() }).then(finalThing)
-
+  var p3 = Promise.resolve(thenable);
+  p3.then(function(v) {
+    console.log(v); // "Resolving"
+  }, function(e) {
+    // not called
+  });
   </script>
 </body>
 </html>

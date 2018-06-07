@@ -192,63 +192,53 @@
       }
 		}
 
-    PromiseClass.prototype = {
-			then: function(onFulfilled, onRejected) {
-	      var promise = this,
-						storage = {
-							events: {},
-							promise: undefined,
-							transition: function(state, value) {
-								this.promise.state = state;
-								this.promise.value = value;
-							}
-						};
+    PromiseClass.prototype.then = function(onFulfilled, onRejected) {
+      var promise = this,
+					task = {
+						events: {},
+						promise: undefined,
+						transition: function(state, value) {
+							this.promise.state = state;
+							this.promise.value = value;
+						}
+					};
 
-				storage.events.fulFilled = onFulfilled;
-				storage.events.rejected = onRejected;
+			task.events.fulFilled = onFulfilled;
+			task.events.rejected = onRejected;
 
-        // then must return a promise
-        // https://promisesaplus.com/#point-40
-	      storage.promise = new PromiseClass(function (onFulfilled, onRejected) {
+      // then must return a promise
+      // https://promisesaplus.com/#point-40
+      task.promise = new PromiseClass(function (onFulfilled, onRejected) {
+        // Nothing here
+			});
 
-				});
+      // Put current task to Marcotask list
+      this.tasks.push(task);
 
-	      this.tasks.push(storage);
+      // Send notify to current promise
+      notify(this);
 
-	      notify(this);
-
-	      return storage.promise;
-	    },
-
-			catch: function(onRejected) {
-				return this.then(undefined, onRejected);
-			}
-		};
+      return task.promise;
+    };
 
 		PromiseClass.resolve = function(mixed) {
-			if (fn.isCallable(mixed)) {
-				mixed = mixed(promise);
-			}
-
-			if (mixed instanceof promise) {
+			if (mixed instanceof PromiseClass) {
 				return mixed;
 			}
 
-			var result = new this(function(onFulfilled, onRejected) {
-        resolve({
-          fulFilled: onFulfilled,
-          rejected: onRejected
-        }, mixed);
+			return new PromiseClass(function(resolve, reject) {
+        // Resolve
+        resolve(mixed);
 			});
 		};
 
 		PromiseClass.reject = function(reason) {
-			if (fn.isCallable(reason)) {
-				reason = reason(promise);
+			if (reason instanceof PromiseClass) {
+				return reason;
 			}
 
-			return new this(function(onFulfilled, onRejected) {
-				rejected(reason);
+			return new PromiseClass(function(resolve, reject) {
+				reject(reason);
 			});
 		};
 
@@ -262,7 +252,6 @@
 				return this;
 			},
 			rejected: function (promise, reason) {
-        console.log(reason);
 				if (promise.state === 'pending') {
 					promise.state = 'rejected';
 					promise.value = reason;
@@ -291,7 +280,7 @@
       // If x is a promise, adopt its state
       // So we put the onFulfilled and onRejected callback to adopt its state, value and reason
       // https://promisesaplus.com/#point-49
-			if (mixed instanceof promise) {
+			if (mixed instanceof PromiseClass) {
 				mixed.then(function (value) {
 					promiseContext.fulFilled(promise, value);
 				}, function (reason) {
@@ -318,7 +307,7 @@
           promiseContext.rejected(promise, e);
         }
 
-        if (fn.isFunction(then)) {
+        if (fn.isCallable(then)) {
   				try {
             then.call(
               mixed,
@@ -358,47 +347,41 @@
       if (promise.state !== 'pending' && promise.tasks.length) {
         // Marcotask
         setTimeout(function() {
-          var tasks = promise.tasks;
+          var mircotaskList = promise.tasks;
           promise.tasks = [];
 
           // Mircotask
-          var storage = undefined;
-          while (storage = tasks.shift()) {
-  					var promised = storage.promise;
+          var microtask = undefined;
+          while (microtask = mircotaskList.shift()) {
+  					var promised = microtask.promise;
 
-  					try {
-  						if (!promise.state in storage.events) {
-  							storage.transition(promise.state, promise.value);
-  						} else {
-                var object = storage.events[promise.state];
-                if (fn.isCallable(object)) {
+						if (!promise.state in microtask.events) {
+							microtask.transition(promise.state, promise.value);
+						} else {
+              var object = microtask.events[promise.state];
+              if (fn.isCallable(object)) {
+                try {
                   // If either onFulfilled or onRejected returns a value x,
                   // run the Promise Resolution Procedure [[Resolve]](promise2, x).
                   // https://promisesaplus.com/#point-41
-                  try {
-      							var result = object(promise.value);
-      							resolve(promised, result);
-                  }
-                  catch(e) {
-                    // If either onFulfilled or onRejected throws an exception e,
-                    // promise2 must be rejected with e as the reason.
-                    // https://promisesaplus.com/#point-42
-                    promiseContext.rejected(promised, e);
-                  }
-                } else {
-                  // If onFulfilled is not a function and promise1 is fulFilled,
-                  // promise2 must be fulFilled with the same value as promise1.
-                  // https://promisesaplus.com/#point-43
-                  // If onRejected is not a function and promise1 is rejected,
-                  // promise2 must be rejected with the same reason as promise1.
-                  // https://promisesaplus.com/#point-44
-                  promiseContext[promise.state](promised, promise.value);
+                  resolve(promised, object(promise.value));
                 }
-  						}
-  					}
-            catch (e) {
-              storage.transition('rejected', e);
-            }
+                catch(e) {
+                  // If either onFulfilled or onRejected throws an exception e,
+                  // promise2 must be rejected with e as the reason.
+                  // https://promisesaplus.com/#point-42
+                  promiseContext.rejected(promised, e);
+                }
+              } else {
+                // If onFulfilled is not a function and promise1 is fulFilled,
+                // promise2 must be fulFilled with the same value as promise1.
+                // https://promisesaplus.com/#point-43
+                // If onRejected is not a function and promise1 is rejected,
+                // promise2 must be rejected with the same reason as promise1.
+                // https://promisesaplus.com/#point-44
+                promiseContext[promise.state](promised, promise.value);
+              }
+						}
   				}
         });
       }
