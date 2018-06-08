@@ -32,6 +32,7 @@
 			return this;
 		} else {
 			var collection = new ElementCollection();
+			console.log(collection, ElementCollection);
 			collectElements(object, doc, collection);
 
 			// Clear _added flag
@@ -142,15 +143,15 @@
 		 */
     each: function(object, callback) {
   		if (fn.isNative(object.forEach)) {
-  			var skip = false;
-  			object.forEach(function(element, index, object) {
-  				if (!skip) {
-  					var result = callback.call(element, index, element, object);
-  					if (fn.isDefined(result) && !result) {
-  						skip = true;
-  					}
-  				}
-  			});
+				var skip = false;
+				object.forEach(function(element, index, object) {
+					if (!skip) {
+						result = callback.call(element, index, element, object);
+						if (fn.isDefined(result) && !result) {
+							skip = true;
+						}
+					}
+				});
   		} else if (fn.isNative(object.item)) {
   			fn.each(slice.call(object), callback);
   		} else if (fn.isObject(object)) {
@@ -161,7 +162,8 @@
   				}
   			}
   		}
-    },
+			return this;
+		},
 
 		/**
 		 * [description]
@@ -231,6 +233,11 @@
 			return result;
 		},
 
+		/**
+		 * [description]
+		 * @param  {[type]} text [description]
+		 * @return {[type]}      [description]
+		 */
 		parseJSON: function(text) {
 			if (!text || !fn.isString(text)) {
 				return null;
@@ -243,6 +250,11 @@
 			}
 		},
 
+		/**
+		 * [description]
+		 * @param  {[type]} text [description]
+		 * @return {[type]}      [description]
+		 */
 		parseXML: function(text) {
 			var parser;
 			if (!text || !fn.isString(text)) {
@@ -256,13 +268,23 @@
 			}
 
 			return (!parser || (parser = parser.parseFromString(text, 'text/xml')).getElementsByTagName('parsererror').length) ? null : parser;
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} text [description]
+		 * @return {[type]}      [description]
+		 */
+		camelCase: function(text) {
+			return (text) ? text.toLowerCase().replace(/[\-_\s]([\da-z])/gi, function(str, match) {
+				return match.toUpperCase();
+			}) : '';
 		}
   };
 
   fn.extend(Moduler, fn);
 
 	// ElementCollection
-	// Store all elements and provides ton of function
 	var ElementCollection = (function() {
 		/**
 		 * [ElementCollectionClass description]
@@ -271,30 +293,109 @@
 		 */
 		function ElementCollectionClass(elements) {
 			var self = this;
+
 			if (fn.isDefined(elements)) {
 				if (fn.isIterable(elements)) {
 					fn.each(elements, function() {
 						if (fn.isDOMElement(this)) {
-							self.push(this);
+							ary.push.call(self, this);
 						}
 					});
 				} else if (fn.isDOMElement(elements)) {
-					self.push(elements);
+					ary.push.call(self, elements);
 				}
 			}
 		}
 
-	  ElementCollectionClass.prototype = {
+	  defaultPrototype = {
 			constructor: ElementCollectionClass,
-			push: function(element) {
-				if (!fn.isDOMElement(element)) {
-					throw new TypeError('Object ' + element + ' is not an element.');
-				}
-				ary.push.call(this, element);
-			},
+			push: ary.push,
 			indexOf: ary.indexOf,
 			forEach: ary.forEach,
-			length: 0
+			some: ary.some,
+			length: 0,
+
+			// Add ElementCollection function here, assume chainable
+			// Usage: Moduler(selector).function([...args]);
+
+			/**
+			 * [description]
+			 * @param  {Function} callback [description]
+			 * @return {[type]}            [description]
+			 */
+			each: function(callback) {
+				fn.each(this, callback);
+				return this;
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} css   [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
+			css: function(css, value) {
+				var elem,
+						styleName,
+						owner,
+						self = this,
+						cssObj = {};
+
+				if (fn.isPlainObject(css)) {
+					// If the css is An array of CSS properties, iterate and execute one by one
+					fn.each(css, function(style, value) {
+						self.css(style, value);
+					});
+				} else if (fn.isString(css)) {
+					// Cover to camcel case
+					styleName = fn.camelCase(css);
+
+					// If the value is defined
+					if (fn.isDefined(value)) {
+						console.log(this);
+						fn.each(this, function(i) {
+							if (fn.isDefined(this.style[styleName])) {
+								this.style[styleName] = (fn.isCallable(value)) ? value.call(this, i, this.style[styleName]) : value;
+							}
+						});
+					} else {
+						if (this.length > 0) {
+							elem = this[0];
+							owner = fn.owner(elem).document;
+
+							if (owner.defaultView && owner.defaultView.getComputedStyle) {
+								return owner.defaultView.getComputedStyle(elem, '').getPropertyValue(css);
+							} else if (elem.currentStyle) {
+								return elem.currentStyle[styleName];
+							}
+
+							return elem.style[styleName];
+						}
+						return null;
+					}
+				}
+				return this;
+			}
+		};
+
+		ElementCollectionClass.prototype = defaultPrototype;
+
+		var defaultPrototype,
+				reservedFunc = {};
+
+		ElementCollectionClass.hook = function(name, func) {
+			if (fn.isCallable(func)) {
+				if (fn.isDefined(defaultPrototype[name])) {
+					reservedFunc[name] = true;
+				}
+				ElementCollectionClass.prototype[name] = func;
+			}
+			return this;
+		};
+
+		ElementCollectionClass.reset = function() {
+			ElementCollectionClass.prototype = defaultPrototype;
+			return this;
 		};
 
 		return ElementCollectionClass;
@@ -346,24 +447,10 @@
 		return source;
 	}
 
-  function select(needle, object) {
-    var packer = {};
-
-    packer.each = function(callback) {
-      if (fn.isCallable(callback)) {
-        for (var key in object) {
-          callback.apply(object, [key, object[key]]);
-        }
-      }
-      return this;
-    };
-
-    return packer;
-  }
-
 	// [ Moduler.Promise ]
   // 		Abide by Promises/A+ Rule
   // 		https://promisesaplus.com/
+
   Moduler.Promise = (function() {
 		/**
 		 * [PromiseClass description]
@@ -774,7 +861,7 @@
 					if (!fn.isPlainObject(settings.accepts)) {
 						settings.accepts = {};
 					}
-						console.log(xmlHttp);
+
 					fn.extend(settings.accepts, ajaxSettings.default.accepts);
 					xmlHttp.setRequestHeader('Accept', (settings.dataType && settings.accepts[settings.dataType]) ? settings.accepts[settings.dataType] + ((settings.dataType !== '*') ? ', ' + allType + '; q=0.01' : '') : settings.accepts['*']);
 
@@ -910,56 +997,6 @@
 
 		return AjaxClass;
 	})();
-
-  Moduler.config = function(config) {
-    if (typeof config !== undefined) {
-      select('plugin'.split(' '), config).each(function(parameter, value) {
-        if (parameter === 'plugin') {
-          value += '/';
-          var matches = /^(?:.{0,2}\/+)?(?:[\w-.]+\/*)+(\/)+?$/.exec(value)
-          if (matches) {
-            configuration.plugin = value;
-          }
-        }
-      });
-    }
-  }
-
-  context.onScriptLoad = function(e) {
-    if (e.type === 'load') {
-      head.removeChild(e.currentTarget || e.srcElement);
-    }
-  };
-
-  context.onScriptError = function(e) {
-    if (e.type === 'error') {
-      head.removeChild(e.currentTarget || e.srcElement);
-    }
-  };
-
-  Moduler.load = function(scriptName) {
-    var matches = /^(?:.{0,2}\/+)?(?:[\w-.]+\/*)+(\.js)?$/.exec(scriptName);
-    if (matches) {
-      if (!matches[1]) {
-        scriptName += '.js';
-      }
-      var script = doc.createElement('script');
-
-      // Remove the script when loaded or failed
-      script.addEventListener('load', context.onScriptLoad, false);
-      script.addEventListener('readystatechange', context.onScriptLoad, false);
-      script.addEventListener('error', context.onScriptError, false);
-
-      script.async = true;
-      script.charset = 'utf-8';
-      script.type = 'text/javascript';
-
-      script.src = configuration.plugin + scriptName;
-
-      head.appendChild(script);
-    }
-    return this.exports;
-  };
 
 	global.Moduler = Moduler;
 
