@@ -32,7 +32,6 @@
 			return this;
 		} else {
 			var collection = new ElementCollection();
-			console.log(collection, ElementCollection);
 			collectElements(object, doc, collection);
 
 			// Clear _added flag
@@ -142,7 +141,8 @@
 		 * @return {[type]}            [description]
 		 */
     each: function(object, callback) {
-  		if (fn.isNative(object.forEach)) {
+			var prototype = Object.getPrototypeOf(object);
+  		if (prototype && prototype.forEach && fn.isNative(prototype.forEach)) {
 				var skip = false;
 				object.forEach(function(element, index, object) {
 					if (!skip) {
@@ -152,7 +152,7 @@
 						}
 					}
 				});
-  		} else if (fn.isNative(object.item)) {
+  		} else if (prototype && prototype.item && fn.isNative(prototype.item)) {
   			fn.each(slice.call(object), callback);
   		} else if (fn.isObject(object)) {
   			for (var index in object) {
@@ -174,7 +174,7 @@
     extend: function(object, extendObject) {
   		fn.each(extendObject, function(key, val) {
 				if (!fn.isDefined(object[key])) {
-					object[key] = val;
+					object[key] = fn.clone(val);
 				}
   		});
   		return this;
@@ -307,8 +307,10 @@
 			}
 		}
 
+		var defaultPrototype,
+				reservedFunc = {};
+
 	  defaultPrototype = {
-			constructor: ElementCollectionClass,
 			push: ary.push,
 			indexOf: ary.indexOf,
 			forEach: ary.forEach,
@@ -352,7 +354,6 @@
 
 					// If the value is defined
 					if (fn.isDefined(value)) {
-						console.log(this);
 						fn.each(this, function(i) {
 							if (fn.isDefined(this.style[styleName])) {
 								this.style[styleName] = (fn.isCallable(value)) ? value.call(this, i, this.style[styleName]) : value;
@@ -378,10 +379,7 @@
 			}
 		};
 
-		ElementCollectionClass.prototype = defaultPrototype;
-
-		var defaultPrototype,
-				reservedFunc = {};
+		fn.extend(ElementCollectionClass.prototype, defaultPrototype);
 
 		ElementCollectionClass.hook = function(name, func) {
 			if (fn.isCallable(func)) {
