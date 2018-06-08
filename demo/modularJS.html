@@ -9,14 +9,25 @@
 <body>
   <div></div>
   <script>
-  var $ = Moduler;
-  var p = $.ajax('./example.json', {
-    dataType: 'json'
-  }).then(function(data) {
-    console.log(data);
-  }, function(error) {
-    console.log(error); // Stacktrace
-  });
+  var copy = Moduler.clone({
+      one : {
+          'one-one' : new String("hello"),
+          'one-two' : [
+              "one", "two", true, "four"
+          ]
+      },
+      two : document.createElement("div"),
+      three : [
+          {
+              name : "three-one",
+              number : new Number("100"),
+              obj : new function() {
+                  this.name = "Object test";
+              }
+          }
+      ]
+  })
+  console.log(copy);
   </script>
 </body>
 </html>

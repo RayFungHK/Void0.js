@@ -14,7 +14,6 @@
       head = doc.getElementsByTagName('head')[0],
       context = {},
   		slice = ary.slice,
-  		some = ary.some,
 
 			container = doc.createElement('div'),
 			iframe = doc.createElement('iframe'),
@@ -105,7 +104,7 @@
 		 * @return {[type]}        [description]
 		 */
 		isIterable: function(object) {
-			return (object && (fn.isNative(object.some) || fn.isNative(object.forEach)));
+			return (object && (toString.call(object) === '[object Array]' || fn.isNative(object.forEach)));
 		},
 
 		/**
@@ -142,12 +141,7 @@
 		 * @return {[type]}            [description]
 		 */
     each: function(object, callback) {
-  		if (fn.isNative(object.some)) {
-  			object.some(function(element, index, object) {
-  				var result = callback.call(element, index, element, object);
-  				return (!fn.isDefined(result)) ? false : !result;
-  			});
-  		} else if (fn.isNative(object.forEach)) {
+  		if (fn.isNative(object.forEach)) {
   			var skip = false;
   			object.forEach(function(element, index, object) {
   				if (!skip) {
@@ -190,31 +184,51 @@
 		 * @return {[type]}        [description]
 		 */
 		clone: function(object) {
-			var newObject;
+			if (!object) {
+				return object;
+			}
 
-			if (!fn.isDefined(object) || !object) {
-        return object;
-      }
-
-			if (object instanceof Date) {
-				return new Date(object.getTime());
-			} else if (fn.isDefined(object.cloneNode)) {
-				return object.cloneNode(true);
-			} else if (fn.isArray(object)) {
-				return slice.call(object);
-			} else if (fn.isObject(object)) {
-				if (object.constructor) {
-					newObject = object.constructor();
-				} else {
-					newObject = {};
+			var result;
+			fn.each([Number, String, Boolean], function() {
+				if (object instanceof this) {
+					result = this(object);
+					return false;
 				}
-				fn.each(object, function(key, val) {
-					newObject[key] = fn.clone(val);
+			});
+
+			if (fn.isDefined(result)) {
+				return result;
+			}
+
+			if (fn.isIterable(object)) {
+				result = [];
+				fn.each(object, function(key, value) {
+					result[key] = fn.clone(value);
 				});
-				return newObject;
+			} else if (fn.isObject(object)) {
+				if (fn.isDOMElement(object)) {
+					result = object.cloneNode(true);
+				} else if (!object.prototype) {
+          if (object instanceof Date) {
+            result = new Date(object);
+          } else {
+            result = {};
+            for (var property in object) {
+              result[property] = fn.clone(object[property]);
+            }
+          }
+        } else {
+          if (object.constructor) {
+            result = new object.constructor();
+          } else {
+            result = object;
+          }
+        }
 			} else {
 				return object;
 			}
+
+			return result;
 		},
 
 		parseJSON: function(text) {
@@ -234,11 +248,13 @@
 			if (!text || !fn.isString(text)) {
 				return null;
 			}
+
 			try {
 				parser = new DOMParser();
 			} catch ( e ) {
 				parser = undefined;
 			}
+
 			return (!parser || (parser = parser.parseFromString(text, 'text/xml')).getElementsByTagName('parsererror').length) ? null : parser;
 		}
   };
@@ -278,7 +294,6 @@
 			},
 			indexOf: ary.indexOf,
 			forEach: ary.forEach,
-			some: ary.some,
 			length: 0
 		};
 
