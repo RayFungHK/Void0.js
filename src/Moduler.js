@@ -453,9 +453,48 @@
 				}
 			},
 
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
+			shift: function(callback) {
+				if (!this.length) {
+					return this;
+				}
+
+				if (fn.isDefined(callback) && fn.isCallable(callback)) {
+					var elem = ary.shift.call(this);
+					callback.call(Moduler(elem));
+					return this;
+				} else {
+					return Moduler(this[0]);
+				}
+			},
+
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
+			pop: function(callback) {
+				if (!this.length) {
+					return this;
+				}
+
+				if (fn.isDefined(callback) && fn.isCallable(callback)) {
+					var elem = ary.pop.call(this);
+					callback.call(Moduler(elem));
+					return this;
+				} else {
+					return Moduler(this[this.length - 1]);
+				}
+			},
 		};
 
 		(function() {
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
 			fn.each(['', 'Array'], function() {
 				var name = this;
 				defaultPrototype['serialize' + name] = function() {

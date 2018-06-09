@@ -39,7 +39,11 @@
     'color': '#fff',
     'padding': '1em'
   }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
-  console.log(Moduler('form').serializeArray());
+
+  console.log(Moduler('span').pop(function() {
+    console.log(this[0].innerText);
+  })[0].innerText);
+
   </script>
 </body>
 </html>
