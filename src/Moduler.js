@@ -289,6 +289,35 @@
 		 */
 		comparePosition: function(a, b) {
 			return a.compareDocumentPosition ? a.compareDocumentPosition(b) : a.contains ? (a != b && a.contains(b) && 16) + (a != b && b.contains(a) && 8) + (a.sourceIndex >= 0 && b.sourceIndex >= 0 ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2) : 1) : 0;
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} data [description]
+		 * @return {[type]}      [description]
+		 */
+		param: function(data, encode) {
+			var params = [];
+
+			function buildQueryString(key, value) {
+				value = (fn.isCallable(value)) ? value() : value;
+				params.push(key + '=' + (value || ''));
+			}
+
+			(function deeprun(data, prefix) {
+				fn.each(data, function(key, val) {
+					key = (!fn.isArray(data)) ? key : '';
+					var param = (prefix) ? prefix + '[' + key + ']' : key;
+
+					if (fn.isArray(val) || fn.isPlainObject(val)) {
+						deeprun(val, param);
+					} else {
+						buildQueryString(param, val);
+					}
+				});
+			})(data, '');
+
+			return params.join('&');
 		}
   };
 
@@ -568,6 +597,7 @@
 				});
 				return collection;
 			},
+
 		};
 
 		(function() {

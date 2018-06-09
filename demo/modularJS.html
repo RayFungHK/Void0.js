@@ -40,7 +40,14 @@
     'padding': '1em'
   }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-  console.log(Moduler('div').find('span'));
+  console.log(Moduler.param({
+    a: {
+      one: 1,
+      two: 2,
+      three: 3
+    },
+    b: [ 1, 2, 3 ]
+  }));
 
   </script>
 </body>
