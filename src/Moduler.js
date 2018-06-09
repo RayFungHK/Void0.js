@@ -279,6 +279,16 @@
 			return (text) ? text.toLowerCase().replace(/[\-_\s]([\da-z])/gi, function(str, match) {
 				return match.toUpperCase();
 			}) : '';
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} a [description]
+		 * @param  {[type]} b [description]
+		 * @return {[type]}   [description]
+		 */
+		comparePosition: function(a, b) {
+			return a.compareDocumentPosition ? a.compareDocumentPosition(b) : a.contains ? (a != b && a.contains(b) && 16) + (a != b && b.contains(a) && 8) + (a.sourceIndex >= 0 && b.sourceIndex >= 0 ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2) : 1) : 0;
 		}
   };
 
@@ -487,6 +497,76 @@
 				} else {
 					return Moduler(this[this.length - 1]);
 				}
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} selector [description]
+			 * @return {[type]}          [description]
+			 */
+			is: function(selector) {
+				var found = false,
+						elem;
+				if (!this.length) {
+					return false;
+				}
+
+				elem = this[0];
+				if (fn.isString(selector) || fn.isIterable(selector)) {
+					if (fn.isString(selector)) {
+						selector = Moduler(selector);
+					}
+
+					fn.each(selector, function() {
+						if (this === elem) {
+							found = true;
+							return false;
+						}
+					});
+					return found;
+				} else if (fn.isCallable(selector)) {
+					return selector.call(elem);
+				}
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} selector [description]
+			 * @return {[type]}          [description]
+			 */
+			find: function(selector) {
+				var collection = new ElementCollection(),
+						elems = this;
+				if (fn.isString(selector)) {
+					fn.each(elems, function() {
+						fn.each(this.querySelectorAll(selector), function() {
+							if (!this._added) {
+								this._added = true;
+								collection.push(this);
+							}
+						});
+					});
+				} else {
+					(function deepsearch(element) {
+						if (fn.isIterable(element)) {
+							fn.each(element, function() {
+								deepsearch(this);
+							});
+						} else if (fn.isDOMElement(element)) {
+							fn.each(elems, function() {
+								if (!this._added && fn.comparePosition(this, element) === 20) {
+									this.added = true;
+									collection.push(element);
+								}
+							});
+						}
+					})(selector);
+				}
+
+				fn.each(collection, function() {
+					delete this._added;
+				});
+				return collection;
 			},
 		};
 

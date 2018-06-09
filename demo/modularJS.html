@@ -40,9 +40,7 @@
     'padding': '1em'
   }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-  console.log(Moduler('span').pop(function() {
-    console.log(this[0].innerText);
-  })[0].innerText);
+  console.log(Moduler('div').find('span'));
 
   </script>
 </body>
