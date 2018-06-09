@@ -376,8 +376,98 @@
 					}
 				}
 				return this;
-			}
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} css [description]
+			 * @return {[type]}     [description]
+			 */
+			removeCss: function(css) {
+				if (fn.isString(css)) {
+					fn.each(this, function() {
+						var elem = this,
+								csslist = css.split(' ');
+
+						fn.each(csslist, function() {
+							var cc = fn.camelCase(this);
+							if (fn.isDefined(elem.style[cc])) {
+								elem.style[cc] = '';
+							}
+						});
+					});
+				}
+
+				return this;
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} classname [description]
+			 * @return {[type]}           [description]
+			 */
+			hasClass: function(classname) {
+				if (this.length > 0) {
+					var elem = this[0];
+					if ((' ' + elem.className + ' ').indexOf(' ' + classname + ' ') >= 0) {
+						return true;
+					}
+				}
+				return false;
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} classname   [description]
+			 * @param  {[type]} addorremove [description]
+			 * @return {[type]}             [description]
+			 */
+			toggleClass: function(classname, addorremove) {
+				fn.each(this, function(i, elem) {
+					classname = (fn.isCallable(classname)) ? classname.call(this.className, i, this.className) : classname;
+					if ((fn.isDefined(addorremove) && addorremove) || (!fn.isDefined(addorremove) && !Moduler(elem).hasClass(classname))) {
+						Moduler(elem).addClass(classname);
+					} else {
+						Moduler(elem).removeClass(classname);
+					}
+					if (!elem.className) {
+						elem.removeAttribute('class');
+					}
+				});
+				return this;
+			},
 		};
+
+		fn.each(['add', 'remove'], function(key, name) {
+			defaultPrototype[name + 'Class'] = function(classname) {
+				if (classname) {
+					fn.each(this, function(i) {
+						var classList = {};
+
+						classname = (fn.isCallable(classname)) ? classname.call(this.className, i, this.className) : classname;
+						fn.each(this.className.split(' '), function() {
+							classList[this] = true;
+						});
+
+						if (fn.isString(classname)) {
+							classname = classname.split(' ');
+						}
+
+						if (fn.isIterable(classname)) {
+							fn.each(classname, function() {
+								if (name == 'add') {
+									classList[this] = true;
+								} else {
+									delete classList[this];
+								}
+							});
+							this.className = Object.keys(classList).join(' ').trim();
+						}
+					});
+				}
+				return this;
+			};
+		});
 
 		fn.extend(ElementCollectionClass.prototype, defaultPrototype);
 
@@ -436,7 +526,7 @@
 				collectElements(this, context, source);
 			});
 		} else if (fn.isDOMElement(selector) || selector === win || selector === doc) {
-			if (!this._added) {
+			if (!selector._added) {
 				selector._added = true;
 				source.push(selector);
 			}

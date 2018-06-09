@@ -9,7 +9,11 @@
 <body>
   <div>Test</div>
   <script>
-  Moduler('div').css('background-color', '#000')
+  Moduler('div').css({
+    'background-color': '#000',
+    'color': '#fff',
+    'padding': '1em'
+  }).toggleClass('toggle');
   </script>
 </body>
 </html>
