@@ -287,11 +287,11 @@
 	// ElementCollection
 	var ElementCollection = (function() {
 		/**
-		 * [ElementCollectionClass description]
+		 * [ElementCollection description]
 		 * @param       {[type]} elements [description]
 		 * @constructor
 		 */
-		function ElementCollectionClass(elements) {
+		function ElementCollection(elements) {
 			var self = this;
 
 			if (fn.isDefined(elements)) {
@@ -407,7 +407,7 @@
 			 * @return {[type]}           [description]
 			 */
 			hasClass: function(classname) {
-				if (this.length > 0) {
+				if (this.length) {
 					var elem = this[0];
 					if ((' ' + elem.className + ' ').indexOf(' ' + classname + ' ') >= 0) {
 						return true;
@@ -436,8 +436,66 @@
 				});
 				return this;
 			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} html [description]
+			 * @return {[type]}      [description]
+			 */
+			html: function(html) {
+				if (fn.isDefined(html)) {
+					fn.each(this, function(i) {
+						this.innerHTML = (fn.isCallable(html)) ? html.call(this.innerHTML, i, this.innerHTML) : html;
+					});
+					return this;
+				} else {
+					return (this.length) ? this[0].innerHTML : '';
+				}
+			},
+
 		};
 
+		(function() {
+			fn.each(['', 'Array'], function() {
+				var name = this;
+				defaultPrototype['serialize' + name] = function() {
+					var result = [],
+							elem,
+							formData;
+
+					if (this.length) {
+						elem = this[0];
+						if (elem && elem.tagName.toLowerCase() === 'form') {
+							formData = new FormData(elem);
+							fn.each(formData, function(key, value) {
+								if (name) {
+									result.push({
+										name: encodeURIComponent(key),
+										value: encodeURIComponent(value)
+									});
+								} else {
+									result.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+								}
+							});
+						}
+					}
+					return (name) ? result : result.join('&');
+				}
+			})
+		})();
+
+		/**
+		 * [description]
+		 * @param  {[type]} key  [description]
+		 * @param  {[type]} name [description]
+		 * @return {[type]}      [description]
+		 */
+		/**
+		 * [description]
+		 * @param  {[type]} key  [description]
+		 * @param  {[type]} name [description]
+		 * @return {[type]}      [description]
+		 */
 		fn.each(['add', 'remove'], function(key, name) {
 			defaultPrototype[name + 'Class'] = function(classname) {
 				if (classname) {
@@ -469,24 +527,24 @@
 			};
 		});
 
-		fn.extend(ElementCollectionClass.prototype, defaultPrototype);
+		fn.extend(ElementCollection.prototype, defaultPrototype);
 
-		ElementCollectionClass.hook = function(name, func) {
+		ElementCollection.hook = function(name, func) {
 			if (fn.isCallable(func)) {
 				if (fn.isDefined(defaultPrototype[name])) {
 					reservedFunc[name] = true;
 				}
-				ElementCollectionClass.prototype[name] = func;
+				ElementCollection.prototype[name] = func;
 			}
 			return this;
 		};
 
-		ElementCollectionClass.reset = function() {
-			ElementCollectionClass.prototype = defaultPrototype;
+		ElementCollection.reset = function() {
+			ElementCollection.prototype = defaultPrototype;
 			return this;
 		};
 
-		return ElementCollectionClass;
+		return ElementCollection;
 	})();
 
 	function buildHTML(html, source) {
@@ -541,11 +599,11 @@
 
   Moduler.Promise = (function() {
 		/**
-		 * [PromiseClass description]
+		 * [Promise description]
 		 * @param       {[type]} executor [description]
 		 * @constructor
 		 */
-    function PromiseClass(executor) {
+    function Promise(executor) {
 			var promise = this;
 
       this.state = 'pending';
@@ -581,7 +639,7 @@
 		 * @param  {[type]} onRejected  [description]
 		 * @return {[type]}             [description]
 		 */
-    PromiseClass.prototype.then = function(onFulfilled, onRejected) {
+    Promise.prototype.then = function(onFulfilled, onRejected) {
       var promise = this,
 					task = {
 						events: {},
@@ -597,7 +655,7 @@
 
       // then must return a promise
       // https://promisesaplus.com/#point-40
-      task.promise = new PromiseClass(function (onFulfilled, onRejected) {
+      task.promise = new Promise(function (onFulfilled, onRejected) {
         // Nothing here
 			});
 
@@ -615,12 +673,12 @@
 		 * @param  {[type]} mixed [description]
 		 * @return {[type]}       [description]
 		 */
-		PromiseClass.resolve = function(mixed) {
-			if (mixed instanceof PromiseClass) {
+		Promise.resolve = function(mixed) {
+			if (mixed instanceof Promise) {
 				return mixed;
 			}
 
-			return new PromiseClass(function(onFulfilled, reject) {
+			return new Promise(function(onFulfilled, reject) {
         onFulfilled(mixed)
 			});
 		};
@@ -630,12 +688,12 @@
 		 * @param  {[type]} reason [description]
 		 * @return {[type]}        [description]
 		 */
-		PromiseClass.reject = function(reason) {
-			if (reason instanceof PromiseClass) {
+		Promise.reject = function(reason) {
+			if (reason instanceof Promise) {
 				return reason;
 			}
 
-			return new PromiseClass(function(resolve, reject) {
+			return new Promise(function(resolve, reject) {
 				reject(reason);
 			});
 		};
@@ -678,7 +736,7 @@
       // If x is a promise, adopt its state
       // So we put the onFulfilled and onRejected callback to adopt its state, value and reason
       // https://promisesaplus.com/#point-49
-			if (mixed instanceof PromiseClass) {
+			if (mixed instanceof Promise) {
 				mixed.then(function (value) {
 					promiseContext.fulFilled(promise, value);
 				}, function (reason) {
@@ -791,7 +849,7 @@
       }
 		}
 
-		return PromiseClass;
+		return Promise;
 	})();
 
 	Moduler.ajax = (function() {
