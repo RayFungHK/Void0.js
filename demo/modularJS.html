@@ -40,14 +40,7 @@
     'padding': '1em'
   }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-  console.log(Moduler.param({
-    a: {
-      one: 1,
-      two: 2,
-      three: 3
-    },
-    b: [ 1, 2, 3 ]
-  }));
+  console.log(Moduler.parseQuery('a[one]=1&a[two]=2&a[three][d]=3&a[three][e]=4&b[]=1&b[]=2&b[]=3'));
 
   </script>
 </body>

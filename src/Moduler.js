@@ -321,6 +321,82 @@
 		}
   };
 
+	(function() {
+		function extract(keyset, value, result) {
+			var matches,
+					regex = /(?:\[([^\]]*)\])/gm,
+					typeArray,
+					nextset;
+
+			if ((matches = regex.exec(keyset)) !== null) {
+				if (!fn.isDefined(typeArray)) {
+					if (fn.isDefined(result)) {
+						typeArray = fn.isArray(result);
+					} else {
+						typeArray = !matches[1];
+						result = (typeArray) ? [] : {};
+					}
+				}
+
+				nextset = keyset.substring(matches[0].length);
+				if (!fn.isDefined(result[matches[1]])) {
+					result[matches[1]] = undefined;
+				}
+
+				if (nextset) {
+					if (typeArray) {
+						result.push(extract(nextset, value, result[matches[1]]));
+					} else {
+						result[matches[1]] = extract(nextset, value, result[matches[1]]);
+					}
+				} else {
+					if (typeArray) {
+						result.push(value);
+					} else {
+						result[matches[1]] = value;
+					}
+				}
+			}
+
+			return result;
+		}
+
+		/**
+		 * [description]
+		 * @param  {[type]} query [description]
+		 * @return {[type]}       [description]
+		 */
+		fn.parseQuery = function(query) {
+			var params = {};
+			if (!query || !fn.isString(query)) {
+				return params;
+			}
+
+			var pairs = query.split(/[;&]/);
+			fn.each(pairs, function(k) {
+				var keyValuePair = this.split('='),
+						property,
+						value,
+						matches;
+
+				if (keyValuePair) {
+					property = unescape(keyValuePair[0]);
+					value = (keyValuePair.length === 1) ? undefined : unescape(keyValuePair[1]).replace(/\+/g, ' ');
+					if ((matches = /([^\[]+)((?:\[[^\]]*\])*)/.exec(property)) !== null) {
+						property = unescape(matches[1]);
+						if (matches[2]) {
+							params[property] = extract(matches[2], value, params[property]);
+						}
+					} else {
+						params[unescape(keyValuePair[0])] = value;
+					}
+				}
+			});
+
+			return params;
+		}
+	})();
+
   fn.extend(Moduler, fn);
 
 	// ElementCollection
