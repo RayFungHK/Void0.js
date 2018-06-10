@@ -694,6 +694,20 @@
 				}
 			},
 
+			slice: function(start, end, callback) {
+				if (!this.length) {
+					return this;
+				}
+
+				if (fn.isDefined(callback) && fn.isCallable(callback)) {
+					var elem = ary.slice.call(this, start, end);
+					callback.call(Moduler(elem));
+					return this;
+				} else {
+					return Moduler(ary.slice.call(this, start, end));
+				}
+			},
+
 			/**
 			 * [description]
 			 * @param  {[type]} selector [description]

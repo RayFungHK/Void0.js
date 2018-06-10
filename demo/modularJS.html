@@ -34,13 +34,6 @@
 </form>
   <div>Test</div>
   <script>
-    Moduler(function() {
-      console.log('Hello');
-      Moduler.ready(function() {
-        console.log('After Ready');
-      });
-    });
-
     Moduler('div').css({
       'background-color': '#000',
       'color': '#fff',
@@ -52,7 +45,7 @@
     }
     hello();
 
-    console.log(Moduler.parseQuery('a[one]=1&a[two]=2&a[three][d]=3&a[three][e]=4&b[]=1&b[]=2&b[]=3'));
+    console.log(Moduler('input').slice(1, 3));
 
   </script>
 </body>
