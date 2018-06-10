@@ -1004,6 +1004,43 @@
 				});
 				return this;
 			},
+
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
+			hide: function() {
+				fn.each(this, function(i, elem) {
+					elem = Moduler(elem);
+					elem.css('display', function(i, value) {
+						if (value !== 'none') {
+							this._defaultdisplay = elem.css('display');
+							return 'none';
+						}
+						return this;
+					});
+				});
+				return this;
+			},
+
+			/**
+			 * Show the matched elements.
+			 *
+			 * @return     {JetObject}  { description_of_the_return_value }
+			 */
+			show: function() {
+				fn.each(this, function(i, elem) {
+					elem = Moduler(elem);
+					elem.css('display', function(i, value) {
+						if (value === 'none') {
+							return (this.defaultDisplay || 'block');
+						}
+						return this;
+					});
+				});
+
+				return this;
+			}
 		};
 
 		(function() {
@@ -1036,7 +1073,7 @@
 					}
 					return (name) ? result : result.join('&');
 				}
-			})
+			});
 		})();
 
 		/**

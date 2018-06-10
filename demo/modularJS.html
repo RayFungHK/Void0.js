@@ -40,7 +40,10 @@
       'padding': '1em'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-    console.log(Moduler('div').data('test'));
+    console.log(Moduler('div').hide());
+    setTimeout(function() {
+      Moduler('div').show()
+    }, 1000)
 
   </script>
 </body>
