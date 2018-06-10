@@ -1004,7 +1004,6 @@
 				});
 				return this;
 			},
-
 		};
 
 		(function() {
@@ -1082,6 +1081,62 @@
 				return this;
 			};
 		});
+
+		(function() {
+			function createDataSet(element) {
+				element.dataset = {};
+				fn.each(element.attributes, function() {
+					if (this.indexOf('data-') === 0) {
+						element.dataset[this.substr(5)] = element[this];
+					}
+				});
+			}
+
+			/**
+			 * [description]
+			 * @param  {[type]} name   [description]
+			 * @param  {[type]} object [description]
+			 * @param  {[type]} clone  [description]
+			 * @return {[type]}        [description]
+			 */
+			defaultPrototype.data = function(name, object, clone) {
+				if (!fn.isDefined(name)) {
+					return (this.length) ? this[0].dataset : null;
+				} else {
+					if (fn.isDefined(object)) {
+						fn.each(this, function() {
+							if (!fn.isDefined(this.dataset)) {
+								createDataSet(this);
+							}
+							this.dataset[name] = (clone) ? fn.clone(object) : object;
+						});
+						return this;
+					} else {
+						var value,
+								dataset;
+						if (fn.isString(name) && this.length) {
+							name = name.trim();
+							if (name) {
+								if (!fn.isDefined(this[0].dataset)) {
+									createDataSet(this[0]);
+								}
+								value = this[0].dataset[name];
+
+								if (fn.isString(value) && /\^{.*\}$/.test(value)) {
+									try {
+										return JSON.parse(value);
+									} catch(e) {
+										return value;
+									}
+								}
+								return value;
+							}
+						}
+						return null;
+					}
+				}
+			};
+		})();
 
 		fn.extend(ElementCollection.prototype, defaultPrototype);
 

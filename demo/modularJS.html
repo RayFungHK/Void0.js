@@ -32,7 +32,7 @@
   <input type="radio" name="radio" value="radio2" id="r2">
   <label for="r2">radio2</label>
 </form>
-  <div>Test</div>
+  <div data-test="hello">Test</div>
   <script>
     Moduler('div').css({
       'background-color': '#000',
@@ -40,14 +40,7 @@
       'padding': '1em'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-    async function hello() {
-
-    }
-    hello();
-
-    Moduler('select').each(function() {
-      console.log(Moduler(this).val());
-    });
+    console.log(Moduler('div').data('test'));
 
   </script>
 </body>
