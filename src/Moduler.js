@@ -135,9 +135,12 @@
 		 * @return {[type]}        [description]
 		 */
 		isIterable: function(object) {
-			// Object.getPrototypeOf support IE9
-			var prototype = (object.__proto__ || Object.getPrototypeOf(object));
-			return (object && (toString.call(object) === '[object Array]' || fn.isNative(prototype.forEach) || fn.isNative(prototype.item)));
+			if (object) {
+				// Object.getPrototypeOf support IE9
+				var prototype = (object.__proto__ || Object.getPrototypeOf(object));
+				return (toString.call(object) === '[object Array]' || fn.isNative(prototype.forEach) || fn.isNative(prototype.item));
+			}
+			return false;
 		},
 
 		/**
@@ -1175,6 +1178,68 @@
 			};
 		})();
 
+		(function() {
+			function createList(object) {
+				var contents = [];
+
+				if (fn.isIterable(object) && object.length) {
+					return object;
+				} else if (fn.isString(object)) {
+					if (/^<.+>$/.test(object)) {
+						return buildHTML(object);
+					} else {
+						return Moduler(object);
+					}
+				} else if (fn.isDOMElement(object)) {
+					contents.push(object);
+					return contents;
+				}
+
+				return contents;
+			}
+
+			function insertElement(pair, appendToElement, sibling) {
+				var target = pair[0],
+						source = pair[1],
+						contents = [],
+						length = (target.length) ? target.length - 1 : 0;
+
+				target = createList(target);
+				source = createList(source);
+
+				if (source.length) {
+					fn.each(target, function(i, el) {
+						if (!fn.isDefined(el.nodeType)) {
+							return;
+						}
+
+						el = (el.nodeType === 1) ? el : fn.owner(el).document.body;
+						fn.each(source, function(j, element) {
+							var elementNode = (length === i) ? element : element.cloneNode(true),
+									targetNode = (!sibling) ? el : ((el.nodeType === 1) ? el.parentNode : null);
+
+							if (targetNode) {
+								if ((targetNode.lastchild === el && appendToElement && sibling) || (appendToElement && !sibling)) {
+									targetNode.appendChild(elementNode);
+								} else {
+									targetNode.insertBefore(elementNode, (sibling) ? (!appendToElement ? el.nextSibling : el) : el.childNodes[0]);
+								}
+							}
+						});
+					});
+				}
+			}
+
+			fn.each(['after', 'before', 'append', 'prepend', 'appendTo', 'prependTo'], function(i, method) {
+				var reverse = (method.indexOf('To') !== -1);
+
+				defaultPrototype[method] = function(element) {
+					insertElement((reverse) ? [element, this] : [this, element], i % 2 === 1, (i < 2));
+					return this;
+				};
+			});
+		})();
+
 		fn.extend(ElementCollection.prototype, defaultPrototype);
 
 		ElementCollection.hook = function(name, func) {
@@ -1196,7 +1261,7 @@
 	})();
 
 	function buildHTML(html, source) {
-		container.innerHTML = selector;
+		container.innerHTML = html;
 		if (fn.isIterable(source)) {
 			fn.each(container.children, function() {
 				source.push(this);

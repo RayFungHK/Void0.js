@@ -40,7 +40,12 @@
       'padding': '1em'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-    console.log(Moduler('div').hide());
+    // Moduler('<div>Inside</div>').appendTo('div');
+    // Moduler('div').append('<div>Inside</div>');
+    // Moduler('<div>Inside</div>').prependTo('div');
+    // Moduler('div').prepend('<div>Inside</div>');
+    Moduler('div').before('<div>Before</div>');
+    Moduler('div').after('<div>After</div>');
     setTimeout(function() {
       Moduler('div').show()
     }, 1000)
