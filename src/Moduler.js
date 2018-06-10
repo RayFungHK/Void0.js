@@ -105,7 +105,9 @@
 		 * @return {[type]}        [description]
 		 */
 		isIterable: function(object) {
-			return (object && (toString.call(object) === '[object Array]' || fn.isNative(object.forEach)));
+			// Object.getPrototypeOf support IE9
+			var prototype = (object.__proto__ || Object.getPrototypeOf(object));
+			return (object && (toString.call(object) === '[object Array]' || fn.isNative(prototype.forEach) || fn.isNative(prototype.item)));
 		},
 
 		/**
@@ -142,7 +144,8 @@
 		 * @return {[type]}            [description]
 		 */
     each: function(object, callback) {
-			var prototype = Object.getPrototypeOf(object);
+			// Object.getPrototypeOf support IE9
+			var prototype = (object.__proto__ || Object.getPrototypeOf(object));
   		if (prototype && prototype.forEach && fn.isNative(prototype.forEach)) {
 				var skip = false;
 				object.forEach(function(element, index, object) {
@@ -694,6 +697,13 @@
 				}
 			},
 
+			/**
+			 * [description]
+			 * @param  {[type]}   start    [description]
+			 * @param  {[type]}   end      [description]
+			 * @param  {Function} callback [description]
+			 * @return {[type]}            [description]
+			 */
 			slice: function(start, end, callback) {
 				if (!this.length) {
 					return this;
@@ -778,6 +788,18 @@
 				return collection;
 			},
 
+			/**
+			 * [description]
+			 * @param  {[type]} selector [description]
+			 * @return {[type]}          [description]
+			 */
+			children: function(selector) {
+				if (!this.length) {
+					return new ElementCollection();
+				}
+
+				return Moduler(this[0].children);
+			},
 		};
 
 		(function() {
@@ -908,15 +930,15 @@
 					});
 				}
 			}
-		} else if (selector instanceof ElementCollection || fn.isIterable(selector)) {
-			fn.each(selector, function() {
-				collectElements(this, context, source);
-			});
 		} else if (fn.isDOMElement(selector) || selector === win || selector === doc) {
 			if (!selector._added) {
 				selector._added = true;
 				source.push(selector);
 			}
+		} else if (selector instanceof ElementCollection || fn.isIterable(selector)) {
+			fn.each(selector, function() {
+				collectElements(this, context, source);
+			});
 		}
 
 		return source;
