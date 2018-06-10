@@ -45,7 +45,9 @@
     }
     hello();
 
-    console.log(Moduler('form').children());
+    Moduler('select').each(function() {
+      console.log(Moduler(this).val());
+    });
 
   </script>
 </body>

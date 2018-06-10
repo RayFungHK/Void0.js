@@ -18,9 +18,39 @@
 			container = doc.createElement('div'),
 			iframe = doc.createElement('iframe'),
 
+			// Mapping List
+			propMapping = {
+				'for': 'htmlFor',
+				'class': 'className'
+			},
+			attrMapping = {
+				'accesskey': 'accessKey',
+				'class': 'className',
+				'colspan': 'colSpan',
+				'for': 'htmlFor',
+				'maxlength': 'maxLength',
+				'readonly': 'readOnly',
+				'rowspan': 'rowSpan',
+				'tabindex': 'tabIndex',
+				'valign': 'vAlign',
+				'cellspacing': 'cellSpacing',
+				'cellpadding': 'cellPadding'
+			},
+			wrapMap = {
+				'thead': [1, '<table>', '</table>'],
+				'col': [2, '<table><colgroup>', '</colgroup></table>'],
+				'tr': [2, '<table><tbody>', '</tbody></table>'],
+				'td': [3, '<table><tbody><tr>', '</tr></tbody></table>']
+			},
+
       // Regex
       regexConstructor = /^\[object .+?Constructor\]$/,
-      regexNative = new RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\/\\]/g, '\\$&').replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$');
+      regexNative = new RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\/\\]/g, '\\$&').replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'),
+			regexUnit = /^\s*(?:(\d+(?:\.\d+)?)\s*(em|ex|%|px|cm|mm|in|pt|pc|ch|rem|vh|vw|vmin|vmax)|(auto))\s*$/,
+			regexCheckable = /^(checkbox|radio)$/i,
+			regexSubmitType = /^(submit|button|image|reset|file)$/i,
+			regexSubmitName = /^(input|select|textarea|keygen)$/i,
+			regexConstructor = /^\[object .+?Constructor\]$/;
 
 	/**
 	 * Moduler
@@ -322,6 +352,19 @@
 			})(data, '');
 
 			return params.join('&');
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} element [description]
+		 * @return {[type]}         [description]
+		 */
+		owner: function(element) {
+			var ownerDoc = element.ownerDocument || doc;
+			return {
+				document: ownerDoc,
+				window: ownerDoc.defaultView || ownerDoc.parentWindow
+			};
 		}
   };
 
@@ -800,6 +843,168 @@
 
 				return Moduler(this[0].children);
 			},
+
+			attr: function(attr, value) {
+				var self = this;
+				if (fn.isPlainObject(attr)) {
+					fn.each(attr, function(attribute, val) {
+						self.attr(attribute, val);
+					});
+				} else {
+					if (fn.isDefined(value)) {
+						if (value === null) {
+							this.removeAttr(attr);
+						} else {
+							fn.each(this, function() {
+								var newValue = (fn.isCallable(value)) ? value.call(Jet(this).attr(attr)) : value;
+								if (this.setAttribute) {
+									this.setAttribute(attr, newValue);
+								} else {
+									this[attrMapping[attr.toLowerCase()] || attr] = newValue;
+								}
+							});
+						}
+					} else {
+						if (this.length) {
+							return (fn.isIE || !elem.getAttribute) ? this[0][attrMapping[attr.toLowerCase()] || attr] : this[0].getAttribute(attr, 2);
+						}
+						return null;
+					}
+				}
+				return this;
+			},
+
+			removeAttr: function(attr) {
+				if (fn.isString(attr)) {
+					fn.each(this, function() {
+						if (this.removeAttribute) {
+							this.removeAttribute(attr);
+						}
+					});
+				}
+				return this;
+			},
+
+			prop: function(prop, value) {
+				var elem, self = this;
+				if (fn.isPlainObject(prop)) {
+					fn.each(prop, function(pp, val) {
+						self.prop(pp, val);
+					});
+				} else {
+					if (fn.isDefined(value)) {
+						fn.each(this, function() {
+							var pp = propMapping[prop] || prop;
+							this[pp] = (fn.isCallable(value)) ? value.call(this) : value;
+						});
+					} else {
+						if (this.length) {
+							return this[0][propMapping[prop] || prop];
+						}
+						return null;
+					}
+				}
+				return this;
+			},
+
+			removeProp: function(prop) {
+				if (fn.isString(prop)) {
+					fn.each(this, function() {
+						delete this[prop];
+					});
+				}
+				return this;
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
+			text: function(value) {
+				if (fn.isDefined(value)) {
+					fn.each(this, function() {
+						this.innerText = (fn.isCallable(value)) ? value.call(this.innerText) : value;
+					});
+					return this;
+				} else {
+					if (this.length) {
+						if (fn.isDefined(this[0].type) && this[0].type.indexOf('select') !== -1) {
+							return this[0].options[this[0].selectedIndex].innerText;
+						}
+						return this[0].innerText;
+					}
+					return '';
+				}
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
+			val: function(value) {
+				if (fn.isDefined(value)) {
+					fn.each(this, function() {
+						var parent;
+						if (regexCheckable.test(this.type)) {
+							parent = Moduler(fn.owner(this).document.body);
+							parent.find('input[type=' + this.type + '][name="' + this.name + '"]').checked(false).filter(function() {
+								return value.indexOf(this.value) !== -1;
+							}).checked(true);
+						} else if (this.tagName.toLowerCase() == 'select') {
+							value = (this.type === 'select-multiple' && !fn.isIterable(value)) ? [value] : ((fn.isIterable(value)) ? value.slice(0, 1) : value);
+							Moduler(this).find('option').prop('selected', false).filter(function() {
+								return value.indexOf(this.value) !== -1;
+							}).prop('selected', true);
+						} else {
+							this.value = (fn.isCallable(value)) ? value.call(this) : value;
+							Moduler(this).attr('value', value);
+						}
+						// Trigger onChange event
+						Moduler(this).change();
+					});
+					return this;
+				} else {
+					if (this.length) {
+						var elem = this[0], parent, selector = 'input[type=' + elem.type + '][name="' + elem.name + '"]:checked',
+								result;
+						if (regexCheckable.test(elem.type)) {
+							parent = Moduler(fn.owner(this).document.body);
+							return parent.find(selector).prop('value');
+						} else if (elem.tagName.toLowerCase() === 'select') {
+							if (elem.type === 'select-multiple') {
+								result = [];
+								Moduler(elem).find('option:checked').each(function() {
+									result.push(this.value);
+								});
+								return result;
+							} else {
+								return Moduler(elem).find('option:checked').prop('value');
+							}
+						} else if (regexSubmitName.test(elem.tagName)) {
+							return elem.value;
+						} else {
+							return Moduler(elem).prop('value');
+						}
+					}
+					return null;
+				}
+			},
+
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
+			detach: function() {
+				fn.each(this, function() {
+					if (this.parentNode) {
+						this.parentNode.removeChild(this);
+					}
+				});
+				return this;
+			},
+
 		};
 
 		(function() {
