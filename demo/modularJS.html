@@ -34,13 +34,25 @@
 </form>
   <div>Test</div>
   <script>
-  Moduler('div').css({
-    'background-color': '#000',
-    'color': '#fff',
-    'padding': '1em'
-  }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
+    Moduler(function() {
+      console.log('Hello');
+      Moduler.ready(function() {
+        console.log('After Ready');
+      });
+    });
 
-  console.log(Moduler.parseQuery('a[one]=1&a[two]=2&a[three][d]=3&a[three][e]=4&b[]=1&b[]=2&b[]=3'));
+    Moduler('div').css({
+      'background-color': '#000',
+      'color': '#fff',
+      'padding': '1em'
+    }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
+
+    async function hello() {
+
+    }
+    hello();
+
+    console.log(Moduler.parseQuery('a[one]=1&a[two]=2&a[three][d]=3&a[three][e]=4&b[]=1&b[]=2&b[]=3'));
 
   </script>
 </body>

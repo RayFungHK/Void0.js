@@ -29,6 +29,7 @@
 	 */
   function Moduler(object) {
 		if (fn.isCallable(object)) {
+			fn.ready(object);
 			return this;
 		} else {
 			var collection = new ElementCollection();
@@ -395,6 +396,95 @@
 
 			return params;
 		}
+	})();
+
+	(function() {
+		var onHold = false,
+				onLoadEvent = [],
+				domReady = false;
+
+		function triggerOnLoad() {
+			if (!onHold) {
+				var pending = onLoadEvent;
+				onLoadEvent = [];
+
+				fn.each(pending, function() {
+					this.call(win);
+				});
+
+				if (onLoadEvent.length) {
+					triggerOnLoad();
+				}
+			}
+		}
+
+		// DOM Ready on post load
+		if (doc.readyState === 'complete') {
+			setTimeout(triggerOnLoad);
+		} else {
+			// Setup DOM Ready Event
+			if (win.addEventListener) {
+				doc.addEventListener('DOMContentLoaded',
+					function() {
+						triggerOnLoad();
+						domReady = true;
+					},
+					false
+				);
+			} else {
+				var top = !win.frameElement && doc.documentElement;
+				// If the top view can be scrolled, trigger onLoadEvent
+				if (top && top.doScroll) {
+					(function tryScroll() {
+						if (onLoadEvent.length) {
+							try {
+								top.doScroll('left');
+							} catch (e) {
+								// Re-call until doScroll is work
+								return setTimeout(tryScroll, 50);
+							}
+							domReady = true;
+							triggerOnLoad();
+						}
+					})();
+				}
+
+				doc.onreadystatechange = function() {
+					if (doc.readyState === 'complete') {
+						doc.onreadystatechange = null;
+						domReady = true;
+						triggerOnLoad();
+					}
+				};
+			}
+
+			win.onload = function() {
+				win.onload = null;
+				domReady = true;
+				triggerOnLoad();
+			};
+		}
+
+		fn.ready = function(callback) {
+			if (fn.isCallable(callback)) {
+				if (domReady) {
+					callback();
+				} else {
+					onLoadEvent.push(callback);
+				}
+			}
+			return this;
+		};
+
+		fn.holdReady = function(enable) {
+			if (enable) {
+				onHold = true;
+			} else if (onHold) {
+				onHold = false;
+				triggerOnLoad();
+			}
+			return this;
+		};
 	})();
 
   fn.extend(Moduler, fn);
