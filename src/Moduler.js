@@ -1371,12 +1371,12 @@
 				var eventObj;
 				if (CustomEvent) {
 					eventObj = new CustomEvent(event, {
-						'bubbles': true,
-						'cancelable': true
+						bubbles: true,
+						cancelable: true
 					});
 				} else if (doc.createEvent) {
 					eventObj = doc.createEvent( (/(mouse.+)|(((un)?click)|over|down|up)/i.test(event)) ? 'MouseEvents' : 'HTMLEvents');
-					eventObj.initEvent(event, true, true);
+					eventObj.initEvent(event, false, true);
 				} else if (element.createEventObject) {
 					eventObj = element.createEventObject();
 				}
@@ -1448,16 +1448,16 @@
 							namespaces = events;
 
 					fn.each(this, function(i, elem) {
-						if (eventName == 'submit') {
-							elem.submit();
-						} else {
-							var eventObj = createEvent(this, eventName);
-							eventObj.namespaces = namespaces;
+						var eventObj = createEvent(this, eventName);
+						eventObj.namespaces = namespaces;
 
-							if (document.createEvent) {
-								elem.dispatchEvent(eventObj);
-							} else {
-								elem.fireEvent('on' + eventName, eventObj);
+						if (document.createEvent) {
+							elem.dispatchEvent(eventObj);
+						} else {
+							elem.fireEvent('on' + eventName, eventObj);
+
+							if (eventName === 'submit') {
+								elem.submit();
 							}
 						}
 					});
@@ -1479,6 +1479,36 @@
 				};
 			});
 		})();
+
+		fn.each(['Width', 'Height'], function(key, name) {
+			var method = name.toLowerCase();
+			defaultPrototype[method] = function(value) {
+				if (fn.isDefined(value)) {
+					fn.each(this, function(i, elem) {
+						elem = Moduler(elem);
+						var matches = regexUnit.exec(elem.css(method));
+
+						value = (fn.isCallable(value)) ? value.call(this, i, elem.css(method)) : value;
+						if (/^\d+(?:\.\d+)?\s*$/.test(value)) {
+							value += 'px';
+						}
+						elem.css(prop, value);
+					});
+					return this;
+				} else {
+					if (this.length) {
+						if (this[0] === win) {
+							return parseInt(win['inner' + name]);
+						} else if (this[0] === doc) {
+							return parseInt(this[0].documentElement['client' + name] || Moduler(this[0]).css('client' + name));
+						} else {
+							return parseInt(this.css(method));
+						}
+					}
+					return 0;
+				}
+			};
+		});
 
 		fn.extend(ElementCollection.prototype, defaultPrototype);
 
