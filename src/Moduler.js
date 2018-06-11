@@ -1,63 +1,63 @@
 (function(global) {
 	"use strict";
-  var fn = {},
-      configuration = {
-        plugin: './plugin/'
-      },
-      allType = '*/'.concat('*'),
+	var fn = {},
+		configuration = {
+			plugin: './plugin/'
+		},
+		allType = '*/'.concat('*'),
 
-      // Shortern Function
-		  ary = Array.prototype,
-      toString = Object.prototype.toString,
-      win = window,
-      doc = document,
-      head = doc.getElementsByTagName('head')[0],
-      context = {},
-  		slice = ary.slice,
+		// Shortern Function
+		ary = Array.prototype,
+		toString = Object.prototype.toString,
+		win = window,
+		doc = document,
+		head = doc.getElementsByTagName('head')[0],
+		context = {},
+		slice = ary.slice,
 
-			container = doc.createElement('div'),
-			iframe = doc.createElement('iframe'),
+		container = doc.createElement('div'),
+		iframe = doc.createElement('iframe'),
 
-			// Mapping List
-			propMapping = {
-				'for': 'htmlFor',
-				'class': 'className'
-			},
-			attrMapping = {
-				'accesskey': 'accessKey',
-				'class': 'className',
-				'colspan': 'colSpan',
-				'for': 'htmlFor',
-				'maxlength': 'maxLength',
-				'readonly': 'readOnly',
-				'rowspan': 'rowSpan',
-				'tabindex': 'tabIndex',
-				'valign': 'vAlign',
-				'cellspacing': 'cellSpacing',
-				'cellpadding': 'cellPadding'
-			},
-			wrapMap = {
-				'thead': [1, '<table>', '</table>'],
-				'col': [2, '<table><colgroup>', '</colgroup></table>'],
-				'tr': [2, '<table><tbody>', '</tbody></table>'],
-				'td': [3, '<table><tbody><tr>', '</tr></tbody></table>']
-			},
+		// Mapping List
+		propMapping = {
+			'for': 'htmlFor',
+			'class': 'className'
+		},
+		attrMapping = {
+			'accesskey': 'accessKey',
+			'class': 'className',
+			'colspan': 'colSpan',
+			'for': 'htmlFor',
+			'maxlength': 'maxLength',
+			'readonly': 'readOnly',
+			'rowspan': 'rowSpan',
+			'tabindex': 'tabIndex',
+			'valign': 'vAlign',
+			'cellspacing': 'cellSpacing',
+			'cellpadding': 'cellPadding'
+		},
+		wrapMap = {
+			'thead': [1, '<table>', '</table>'],
+			'col': [2, '<table><colgroup>', '</colgroup></table>'],
+			'tr': [2, '<table><tbody>', '</tbody></table>'],
+			'td': [3, '<table><tbody><tr>', '</tr></tbody></table>']
+		},
 
-      // Regex
-      regexConstructor = /^\[object .+?Constructor\]$/,
-      regexNative = new RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\/\\]/g, '\\$&').replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'),
-			regexUnit = /^\s*(?:(\d+(?:\.\d+)?)\s*(em|ex|%|px|cm|mm|in|pt|pc|ch|rem|vh|vw|vmin|vmax)|(auto))\s*$/,
-			regexCheckable = /^(checkbox|radio)$/i,
-			regexSubmitType = /^(submit|button|image|reset|file)$/i,
-			regexSubmitName = /^(input|select|textarea|keygen)$/i,
-			regexConstructor = /^\[object .+?Constructor\]$/;
+		// Regex
+		regexConstructor = /^\[object .+?Constructor\]$/,
+		regexNative = new RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\/\\]/g, '\\$&').replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'),
+		regexUnit = /^\s*(?:(\d+(?:\.\d+)?)\s*(em|ex|%|px|cm|mm|in|pt|pc|ch|rem|vh|vw|vmin|vmax)|(auto))\s*$/,
+		regexCheckable = /^(checkbox|radio)$/i,
+		regexSubmitType = /^(submit|button|image|reset|file)$/i,
+		regexSubmitName = /^(input|select|textarea|keygen)$/i,
+		regexConstructor = /^\[object .+?Constructor\]$/;
 
 	/**
 	 * Moduler
 	 * @constructor
 	 * return ElementCollection
 	 */
-  function Moduler(object) {
+	function Moduler(object) {
 		if (fn.isCallable(object)) {
 			fn.ready(object);
 			return this;
@@ -72,10 +72,10 @@
 
 			return collection;
 		}
-  };
+	};
 
-  // Moduler Function
-  fn = {
+	// Moduler Function
+	fn = {
 		/**
 		 * [description]
 		 * @param  {object} object [description]
@@ -176,10 +176,10 @@
 		 * @param  {Function} callback [description]
 		 * @return {[type]}            [description]
 		 */
-    each: function(object, callback) {
+		each: function(object, callback) {
 			// Object.getPrototypeOf support IE9
 			var prototype = (object.__proto__ || Object.getPrototypeOf(object));
-  		if (prototype && prototype.forEach && fn.isNative(prototype.forEach)) {
+			if (prototype && prototype.forEach && fn.isNative(prototype.forEach)) {
 				var skip = false;
 				object.forEach(function(element, index, object) {
 					if (!skip) {
@@ -189,16 +189,16 @@
 						}
 					}
 				});
-  		} else if (prototype && prototype.item && fn.isNative(prototype.item)) {
-  			fn.each(slice.call(object), callback);
-  		} else if (fn.isObject(object)) {
-  			for (var index in object) {
-  				var result = callback.call(object[index], index, object[index], object);
-  				if (fn.isDefined(result) && !result) {
-  					break;
-  				}
-  			}
-  		}
+			} else if (prototype && prototype.item && fn.isNative(prototype.item)) {
+				fn.each(slice.call(object), callback);
+			} else if (fn.isObject(object)) {
+				for (var index in object) {
+					var result = callback.call(object[index], index, object[index], object);
+					if (fn.isDefined(result) && !result) {
+						break;
+					}
+				}
+			}
 			return this;
 		},
 
@@ -208,14 +208,14 @@
 		 * @param  {[type]} extendObject [description]
 		 * @return {[type]}              [description]
 		 */
-    extend: function(object, extendObject) {
-  		fn.each(extendObject, function(key, val) {
+		extend: function(object, extendObject) {
+			fn.each(extendObject, function(key, val) {
 				if (!fn.isDefined(object[key])) {
 					object[key] = fn.clone(val);
 				}
-  		});
-  		return this;
-  	},
+			});
+			return this;
+		},
 
 		/**
 		 * [description]
@@ -248,21 +248,21 @@
 				if (fn.isDOMElement(object)) {
 					result = object.cloneNode(true);
 				} else if (!object.prototype) {
-          if (object instanceof Date) {
-            result = new Date(object);
-          } else {
-            result = {};
-            for (var property in object) {
-              result[property] = fn.clone(object[property]);
-            }
-          }
-        } else {
-          if (object.constructor) {
-            result = new object.constructor();
-          } else {
-            result = object;
-          }
-        }
+					if (object instanceof Date) {
+						result = new Date(object);
+					} else {
+						result = {};
+						for (var property in object) {
+							result[property] = fn.clone(object[property]);
+						}
+					}
+				} else {
+					if (object.constructor) {
+						result = new object.constructor();
+					} else {
+						result = object;
+					}
+				}
 			} else {
 				return object;
 			}
@@ -300,7 +300,7 @@
 
 			try {
 				parser = new DOMParser();
-			} catch ( e ) {
+			} catch (e) {
 				parser = undefined;
 			}
 
@@ -369,14 +369,14 @@
 				window: ownerDoc.defaultView || ownerDoc.parentWindow
 			};
 		}
-  };
+	};
 
 	(function() {
 		function extract(keyset, value, result) {
 			var matches,
-					regex = /(?:\[([^\]]*)\])/gm,
-					typeArray,
-					nextset;
+				regex = /(?:\[([^\]]*)\])/gm,
+				typeArray,
+				nextset;
 
 			if ((matches = regex.exec(keyset)) !== null) {
 				if (!fn.isDefined(typeArray)) {
@@ -425,9 +425,9 @@
 			var pairs = query.split(/[;&]/);
 			fn.each(pairs, function(k) {
 				var keyValuePair = this.split('='),
-						property,
-						value,
-						matches;
+					property,
+					value,
+					matches;
 
 				if (keyValuePair) {
 					property = unescape(keyValuePair[0]);
@@ -449,8 +449,8 @@
 
 	(function() {
 		var onHold = false,
-				onLoadEvent = [],
-				domReady = false;
+			onLoadEvent = [],
+			domReady = false;
 
 		function triggerOnLoad() {
 			if (!onHold) {
@@ -536,7 +536,7 @@
 		};
 	})();
 
-  fn.extend(Moduler, fn);
+	fn.extend(Moduler, fn);
 
 	// ElementCollection
 	var ElementCollection = (function() {
@@ -562,9 +562,9 @@
 		}
 
 		var defaultPrototype,
-				reservedFunc = {};
+			reservedFunc = {};
 
-	  defaultPrototype = {
+		defaultPrototype = {
 			push: ary.push,
 			indexOf: ary.indexOf,
 			forEach: ary.forEach,
@@ -592,10 +592,10 @@
 			 */
 			css: function(css, value) {
 				var elem,
-						styleName,
-						owner,
-						self = this,
-						cssObj = {};
+					styleName,
+					owner,
+					self = this,
+					cssObj = {};
 
 				if (fn.isPlainObject(css)) {
 					// If the css is An array of CSS properties, iterate and execute one by one
@@ -641,7 +641,7 @@
 				if (fn.isString(css)) {
 					fn.each(this, function() {
 						var elem = this,
-								csslist = css.split(' ');
+							csslist = css.split(' ');
 
 						fn.each(csslist, function() {
 							var cc = fn.camelCase(this);
@@ -771,7 +771,7 @@
 			 */
 			is: function(selector) {
 				var found = false,
-						elem;
+					elem;
 				if (!this.length) {
 					return false;
 				}
@@ -801,7 +801,7 @@
 			 */
 			find: function(selector) {
 				var collection = new ElementCollection(),
-						elems = this;
+					elems = this;
 				if (fn.isString(selector)) {
 					fn.each(elems, function() {
 						fn.each(this.querySelectorAll(selector), function() {
@@ -970,8 +970,9 @@
 					return this;
 				} else {
 					if (this.length) {
-						var elem = this[0], parent, selector = 'input[type=' + elem.type + '][name="' + elem.name + '"]:checked',
-								result;
+						var elem = this[0],
+							parent, selector = 'input[type=' + elem.type + '][name="' + elem.name + '"]:checked',
+							result;
 						if (regexCheckable.test(elem.type)) {
 							parent = Moduler(fn.owner(this).document.body);
 							return parent.find(selector).prop('value');
@@ -1055,8 +1056,8 @@
 				var name = this;
 				defaultPrototype['serialize' + name] = function() {
 					var result = [],
-							elem,
-							formData;
+						elem,
+						formData;
 
 					if (this.length) {
 						elem = this[0];
@@ -1153,7 +1154,7 @@
 						return this;
 					} else {
 						var value,
-								dataset;
+							dataset;
 						if (fn.isString(name) && this.length) {
 							name = name.trim();
 							if (name) {
@@ -1165,7 +1166,7 @@
 								if (fn.isString(value) && /\^{.*\}$/.test(value)) {
 									try {
 										return JSON.parse(value);
-									} catch(e) {
+									} catch (e) {
 										return value;
 									}
 								}
@@ -1200,9 +1201,9 @@
 
 			function insertElement(pair, appendToElement, sibling) {
 				var target = pair[0],
-						source = pair[1],
-						contents = [],
-						length = (target.length) ? target.length - 1 : 0;
+					source = pair[1],
+					contents = [],
+					length = (target.length) ? target.length - 1 : 0;
 
 				target = createList(target);
 				source = createList(source);
@@ -1216,7 +1217,7 @@
 						el = (el.nodeType === 1) ? el : fn.owner(el).document.body;
 						fn.each(source, function(j, element) {
 							var elementNode = (length === i) ? element : element.cloneNode(true),
-									targetNode = (!sibling) ? el : ((el.nodeType === 1) ? el.parentNode : null);
+								targetNode = (!sibling) ? el : ((el.nodeType === 1) ? el.parentNode : null);
 
 							if (targetNode) {
 								if ((targetNode.lastchild === el && appendToElement && sibling) || (appendToElement && !sibling)) {
@@ -1307,23 +1308,23 @@
 	}
 
 	// [ Moduler.Promise ]
-  // 		Abide by Promises/A+ Rule
-  // 		https://promisesaplus.com/
+	// 		Abide by Promises/A+ Rule
+	// 		https://promisesaplus.com/
 
-  Moduler.Promise = (function() {
+	Moduler.Promise = (function() {
 		/**
 		 * [Promise description]
 		 * @param       {[type]} executor [description]
 		 * @constructor
 		 */
-    function Promise(executor) {
+		function Promise(executor) {
 			var promise = this;
 
-      this.state = 'pending';
-      this.value = undefined;
-      this.tasks = [];
+			this.state = 'pending';
+			this.value = undefined;
+			this.tasks = [];
 
-      if (fn.isCallable(executor)) {
+			if (fn.isCallable(executor)) {
 				try {
 					// Executor
 					executor(
@@ -1336,14 +1337,13 @@
 							promiseContext.rejected(promise, reason);
 						}
 					);
-				}
-				catch (e) {
+				} catch (e) {
 					// Throw Error
 					promiseContext.rejected(promise, e);
 				}
-      } else {
-        throw new TypeError('Promise resolver ' + executor + ' is not a function');
-      }
+			} else {
+				throw new TypeError('Promise resolver ' + executor + ' is not a function');
+			}
 		}
 
 		/**
@@ -1352,34 +1352,34 @@
 		 * @param  {[type]} onRejected  [description]
 		 * @return {[type]}             [description]
 		 */
-    Promise.prototype.then = function(onFulfilled, onRejected) {
-      var promise = this,
-					task = {
-						events: {},
-						promise: undefined,
-						transition: function(state, value) {
-							this.promise.state = state;
-							this.promise.value = value;
-						}
-					};
+		Promise.prototype.then = function(onFulfilled, onRejected) {
+			var promise = this,
+				task = {
+					events: {},
+					promise: undefined,
+					transition: function(state, value) {
+						this.promise.state = state;
+						this.promise.value = value;
+					}
+				};
 
 			task.events.fulFilled = onFulfilled;
 			task.events.rejected = onRejected;
 
-      // then must return a promise
-      // https://promisesaplus.com/#point-40
-      task.promise = new Promise(function (onFulfilled, onRejected) {
-        // Nothing here
+			// then must return a promise
+			// https://promisesaplus.com/#point-40
+			task.promise = new Promise(function(onFulfilled, onRejected) {
+				// Nothing here
 			});
 
-      // Put current task to Marcotask list
-      this.tasks.push(task);
+			// Put current task to Marcotask list
+			this.tasks.push(task);
 
-      // Send notify to current promise
-      notify(this);
+			// Send notify to current promise
+			notify(this);
 
-      return task.promise;
-    };
+			return task.promise;
+		};
 
 		/**
 		 * [description]
@@ -1392,7 +1392,7 @@
 			}
 
 			return new Promise(function(onFulfilled, reject) {
-        onFulfilled(mixed)
+				onFulfilled(mixed)
 			});
 		};
 
@@ -1412,104 +1412,103 @@
 		};
 
 		var promiseContext = {
-			fulFilled: function (promise, value) {
+			fulFilled: function(promise, value) {
 				if (promise.state === 'pending') {
 					promise.state = 'fulFilled';
 					promise.value = value;
-	        notify(promise);
+					notify(promise);
 				}
 				return this;
 			},
-			rejected: function (promise, reason) {
+			rejected: function(promise, reason) {
 				if (promise.state === 'pending') {
 					promise.state = 'rejected';
 					promise.value = reason;
-	        notify(promise);
+					notify(promise);
 				}
 				return this;
 			}
 		};
 
-    // To run [[Resolve]](promise, x)
-    // https://promisesaplus.com/#point-47
+		// To run [[Resolve]](promise, x)
+		// https://promisesaplus.com/#point-47
 		function resolvePromise(promise, mixed) {
-      // If promise and x refer to the same object, reject promise with a TypeError as the reason.
-      // https://promisesaplus.com/#point-48
-      if (promise === mixed) {
-        throw new TypeError('Promise and value not allow refer to the same object');
-      }
+			// If promise and x refer to the same object, reject promise with a TypeError as the reason.
+			// https://promisesaplus.com/#point-48
+			if (promise === mixed) {
+				throw new TypeError('Promise and value not allow refer to the same object');
+			}
 
-      // If x is not an object or function, fulfill promise with x.
-      // https://promisesaplus.com/#point-64
+			// If x is not an object or function, fulfill promise with x.
+			// https://promisesaplus.com/#point-64
 			if (!fn.isObject(mixed) && !fn.isCallable(mixed)) {
 				promiseContext.fulFilled(promise, mixed);
 				return;
 			}
 
-      // If x is a promise, adopt its state
-      // So we put the onFulfilled and onRejected callback to adopt its state, value and reason
-      // https://promisesaplus.com/#point-49
+			// If x is a promise, adopt its state
+			// So we put the onFulfilled and onRejected callback to adopt its state, value and reason
+			// https://promisesaplus.com/#point-49
 			if (mixed instanceof Promise) {
-				mixed.then(function (value) {
+				mixed.then(function(value) {
 					promiseContext.fulFilled(promise, value);
-				}, function (reason) {
+				}, function(reason) {
 					promiseContext.rejected(promise, reason);
 				});
 
 				return;
 			}
 
-      // If x is an object or function
-      // https://promisesaplus.com/#point-53
+			// If x is an object or function
+			// https://promisesaplus.com/#point-53
 			if (fn.isObject(mixed) && 'then' in mixed) {
 				var then,
-            called = false;
+					called = false;
 
-        try {
-          // Let then be x.then
-          // https://promisesaplus.com/#point-54
-          then = mixed.then;
-        }
-        catch(e) {
-          // If retrieving the property x.then results in a thrown exception e, reject promise with e as the reason.
-          // https://promisesaplus.com/#point-55
-          promiseContext.rejected(promise, e);
-        }
+				try {
+					// Let then be x.then
+					// https://promisesaplus.com/#point-54
+					then = mixed.then;
+				} catch (e) {
+					// If retrieving the property x.then results in a thrown exception e, reject promise with e as the reason.
+					// https://promisesaplus.com/#point-55
+					promiseContext.rejected(promise, e);
+				}
 
-        if (fn.isCallable(then)) {
-  				try {
+				if (fn.isCallable(then)) {
+					try {
 						// Call this as x, we assume it is a promise
-            then.call(
-              mixed,
-              function(value) {
-    						if (!called) {
-    							called = true;
-                  // If/when resolvePromise is called with a value y, run [[Resolve]](promise, y).
-                  // https://promisesaplus.com/#point-57
-    							resolvePromise(promise, value);
-    						}
-    					}, function(reason) {
-    						if (called) {
-    							called = true;
-                  // If/when rejectPromise is called with a reason r, reject promise with r.
-                  // https://promisesaplus.com/#point-58
-    							promiseContext.rejected(promise, reason);
-    						}
-    					}
-            );
-  				}
-  				catch (e) {
-            // If resolvePromise or rejectPromise have been called, ignore it.
-            // https://promisesaplus.com/#point-61
-  					if (!called) {
-  						promiseContext.rejected(promise, e);
-  					}
-  				}
-        } else {
-          // If then is not a function, fulfill promise with x.
-          // https://promisesaplus.com/#point-63
-  				promiseContext.fulFilled(promise, mixed);
-  			}
+						then.call(
+							mixed,
+							function(value) {
+								if (!called) {
+									called = true;
+									// If/when resolvePromise is called with a value y, run [[Resolve]](promise, y).
+									// https://promisesaplus.com/#point-57
+									resolvePromise(promise, value);
+								}
+							},
+							function(reason) {
+								if (called) {
+									called = true;
+									// If/when rejectPromise is called with a reason r, reject promise with r.
+									// https://promisesaplus.com/#point-58
+									promiseContext.rejected(promise, reason);
+								}
+							}
+						);
+					} catch (e) {
+						// If resolvePromise or rejectPromise have been called, ignore it.
+						// https://promisesaplus.com/#point-61
+						if (!called) {
+							promiseContext.rejected(promise, e);
+						}
+					}
+				} else {
+					// If then is not a function, fulfill promise with x.
+					// https://promisesaplus.com/#point-63
+					promiseContext.fulFilled(promise, mixed);
+				}
 			} else {
 				// If x is not thenable, fulfill promise with x.
 				// https://promisesaplus.com/#point-64
@@ -1518,48 +1517,47 @@
 		}
 
 		function notify(promise) {
-      if (promise.state !== 'pending' && promise.tasks.length) {
-        // Marcotask
-        setTimeout(function() {
-          var mircotaskList = promise.tasks;
-          promise.tasks = [];
+			if (promise.state !== 'pending' && promise.tasks.length) {
+				// Marcotask
+				setTimeout(function() {
+					var mircotaskList = promise.tasks;
+					promise.tasks = [];
 
-          // Mircotask
-          var microtask;
-          while (microtask = mircotaskList.shift()) {
-  					var forkPromise = microtask.promise;
+					// Mircotask
+					var microtask;
+					while (microtask = mircotaskList.shift()) {
+						var forkPromise = microtask.promise;
 
 						if (!promise.state in microtask.events) {
 							microtask.transition(promise.state, promise.value);
 						} else {
-              var object = microtask.events[promise.state];
-              if (fn.isCallable(object)) {
-                try {
-                  // If either onFulfilled or onRejected returns a value x,
-                  // run the Promise Resolution Procedure [[Resolve]](promise2, x).
-                  // https://promisesaplus.com/#point-41
+							var object = microtask.events[promise.state];
+							if (fn.isCallable(object)) {
+								try {
+									// If either onFulfilled or onRejected returns a value x,
+									// run the Promise Resolution Procedure [[Resolve]](promise2, x).
+									// https://promisesaplus.com/#point-41
 									var result = object(promise.value);
-                  resolvePromise(forkPromise, result);
-                }
-                catch(e) {
-                  // If either onFulfilled or onRejected throws an exception e,
-                  // promise2 must be rejected with e as the reason.
-                  // https://promisesaplus.com/#point-42
-                  promiseContext.rejected(forkPromise, e);
-                }
-              } else {
-                // If onFulfilled is not a function and promise1 is fulFilled,
-                // promise2 must be fulFilled with the same value as promise1.
-                // https://promisesaplus.com/#point-43
-                // If onRejected is not a function and promise1 is rejected,
-                // promise2 must be rejected with the same reason as promise1.
-                // https://promisesaplus.com/#point-44
-                promiseContext[promise.state](forkPromise, promise.value);
-              }
+									resolvePromise(forkPromise, result);
+								} catch (e) {
+									// If either onFulfilled or onRejected throws an exception e,
+									// promise2 must be rejected with e as the reason.
+									// https://promisesaplus.com/#point-42
+									promiseContext.rejected(forkPromise, e);
+								}
+							} else {
+								// If onFulfilled is not a function and promise1 is fulFilled,
+								// promise2 must be fulFilled with the same value as promise1.
+								// https://promisesaplus.com/#point-43
+								// If onRejected is not a function and promise1 is rejected,
+								// promise2 must be rejected with the same reason as promise1.
+								// https://promisesaplus.com/#point-44
+								promiseContext[promise.state](forkPromise, promise.value);
+							}
 						}
-  				}
-        });
-      }
+					}
+				});
+			}
 		}
 
 		return Promise;
@@ -1567,39 +1565,39 @@
 
 	Moduler.ajax = (function() {
 		var ajaxSettings = {
-				cached: {},
-				default: {
-					url: location.href,
-					type: 'GET',
-					processData: true,
-					async: true,
-					contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+			cached: {},
+			default: {
+				url: location.href,
+				type: 'GET',
+				processData: true,
+				async: true,
+				contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
 
-					/* Default Null */
-					timeout: 0,
-					data: null,
-					dataType: null,
-					username: null,
-					password: null,
-					cache: null,
-					headers: {},
+				/* Default Null */
+				timeout: 0,
+				data: null,
+				dataType: null,
+				username: null,
+				password: null,
+				cache: null,
+				headers: {},
 
-					accepts: {
-						'*': allType,
-						text: 'text/plain',
-						html: 'text/html',
-						xml: 'application/xml, text/xml',
-						json: 'application/json, text/javascript'
-					},
+				accepts: {
+					'*': allType,
+					text: 'text/plain',
+					html: 'text/html',
+					xml: 'application/xml, text/xml',
+					json: 'application/json, text/javascript'
+				},
 
-					converters: {
-						'* text': win.String,
-						'text html': true,
-						'text json': fn.parseJSON,
-						'text xml': fn.parseXML
-					}
+				converters: {
+					'* text': win.String,
+					'text html': true,
+					'text json': fn.parseJSON,
+					'text xml': fn.parseXML
 				}
-			};
+			}
+		};
 		ajaxSettings._default = fn.clone(ajaxSettings.default);
 
 		function AjaxClass(url, settings) {
@@ -1624,8 +1622,8 @@
 
 			var promise = new Moduler.Promise(function(resolve, reject) {
 				var xmlHttp = null,
-						action = this,
-						converters = {};
+					action = this,
+					converters = {};
 
 				// settings.beforeSend
 				if (fn.isCallable(settings.beforeSend)) {
@@ -1637,7 +1635,7 @@
 					if (settings.dataType === 'script') {
 						// settings.jsonp
 						var jsonpFunc,
-								jsonpCallback;
+							jsonpCallback;
 
 						if (settings.jsonp && fn.isString(settings.jsonp)) {
 							jsonpFunc = settings.jsonp;
@@ -1859,5 +1857,5 @@
 
 	global.Moduler = Moduler;
 
-  Moduler.exports = null;
+	Moduler.exports = null;
 })(window);
