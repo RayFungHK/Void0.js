@@ -1267,22 +1267,36 @@
 				register: function(namespaces, selector, callback) {
 					this.callback.push({
 						namespaces: namespaces,
+						selector: selector,
 						callback: callback
 					});
 
 					return this;
 				},
 
-				trigger: function(e, namespaces) {
-					if (namespaces && fn.isString(namespaces)) {
+				trigger: function(e) {
+					var namespaces = [];
+					if (e.namespaces && fn.isString(e.namespaces)) {
 						namespaces = selector.split('.');
-					} else {
-						namespaces = [];
+					} else if (fn.isIterable(e.namespaces)) {
+						namespaces = e.namespaces;
 					}
 
 					fn.each(this.callback, function(i, object) {
 						if (!namespaces.length) {
-							object.callback(this.element, e);
+							if (object.selector) {
+								if (fn.isCallable(object.selector)) {
+									if (object.selector.call(e.target)) {
+										object.callback(this.element, e);
+									}
+								} else if (fn.isString(object.selector)) {
+									if (Moduler(e.target).is(object.selector)) {
+										object.callback(this.element, e);
+									}
+								}
+							} else {
+								object.callback(this.element, e);
+							}
 						} else {
 							if (namespaces.every(function(value) {
 								return object.namespaces.includes(value);
@@ -1353,6 +1367,22 @@
 				return this;
 			}
 
+			function createEvent(element, event) {
+				var eventObj;
+				if (CustomEvent) {
+					eventObj = new CustomEvent(event, {
+						'bubbles': true,
+						'cancelable': true
+					});
+				} else if (doc.createEvent) {
+					eventObj = doc.createEvent( (/(mouse.+)|(((un)?click)|over|down|up)/i.test(event)) ? 'MouseEvents' : 'HTMLEvents');
+					eventObj.initEvent(event, true, true);
+				} else if (element.createEventObject) {
+					eventObj = element.createEventObject();
+				}
+
+				return eventObj;
+			}
 			/**
 			 * [description]
 			 * @param  {[type]}   events   [description]
@@ -1407,7 +1437,47 @@
 						});
 					}
 				}
+
+				return this;
 			};
+
+			defaultPrototype.trigger = function(events) {
+				if (events = events.trim()) {
+					events = events.split('.');
+					var eventName = events.shift(),
+							namespaces = events;
+
+					fn.each(this, function(i, elem) {
+						if (eventName == 'submit') {
+							elem.submit();
+						} else {
+							var eventObj = createEvent(this, eventName);
+							eventObj.namespaces = namespaces;
+
+							if (document.createEvent) {
+								elem.dispatchEvent(eventObj);
+							} else {
+								elem.fireEvent('on' + eventName, eventObj);
+							}
+						}
+					});
+				}
+				return this;
+			};
+
+			fn.each('click dblClick focus blur change select mouseEnter mouseLeave mouseOver mouseOut submit mouseDown mouseUp mouseMove scroll wheel resize'.split(' '), function(i, event) {
+				defaultPrototype[event] = function(callback) {
+					if (fn.isDefined(callback)) {
+						if (fn.isCallable(callback)) {
+							this.on(this)
+						}
+						this.on(event, callback);
+					} else {
+						this.trigger(event);
+					}
+					return this;
+				};
+			});
 		})();
 
 		fn.extend(ElementCollection.prototype, defaultPrototype);

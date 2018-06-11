@@ -40,11 +40,20 @@
       'padding': '1em'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
+    Moduler('body').on('click', '#test', function() {
+      console.log('Testing Selector');
+    });
+
     Moduler('#test').on('click', function() {
       console.log('Testing 1');
     }).on('click.yes.no', function() {
       console.log('Testing 2');
-    }).off('click.yes');
+    }).click(function() {
+      console.log('Testing 3');
+    });;
+
+    Moduler('#test').trigger('click.yes');
+
     // Moduler('<div>Inside</div>').appendTo('div');
     // Moduler('div').append('<div>Inside</div>');
     // Moduler('<div>Inside</div>').prependTo('div');
