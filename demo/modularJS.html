@@ -38,7 +38,10 @@
     Moduler('div').css({
       'background-color': '#000',
       'color': '#fff',
-      'padding': '1em'
+      'padding': '1em',
+      'height': '100px',
+      'box-sizing': 'border-box',
+      'border': '#f00 10px solid'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
     Moduler('body').on('click', '#test', function() {
@@ -65,7 +68,7 @@
       Moduler('div').show()
     }, 1000)
 
-    console.log(Moduler(window).width());
+    console.log(Moduler('#test').innerWidth('300px'));
 
   </script>
 </body>

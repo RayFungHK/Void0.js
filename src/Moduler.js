@@ -118,6 +118,15 @@
 		 * @param  {[type]} object [description]
 		 * @return {[type]}        [description]
 		 */
+		isBoolean: function(object) {
+			return (typeof object === 'boolean');
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} object [description]
+		 * @return {[type]}        [description]
+		 */
 		isPlainObject: function(object) {
 			if (object !== null && fn.isObject(object)) {
 				if (fn.isCallable(Object.getPrototypeOf)) {
@@ -150,6 +159,15 @@
 		 */
 		isString: function(object) {
 			return (typeof object === 'string');
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} object [description]
+		 * @return {[type]}        [description]
+		 */
+		isNumber: function(object) {
+			return (typeof object === 'number' && isFinite(object));
 		},
 
 		/**
@@ -1037,9 +1055,8 @@
 			},
 
 			/**
-			 * Show the matched elements.
-			 *
-			 * @return     {JetObject}  { description_of_the_return_value }
+			 * [description]
+			 * @return {[type]} [description]
 			 */
 			show: function() {
 				fn.each(this, function(i, elem) {
@@ -1486,13 +1503,14 @@
 				if (fn.isDefined(value)) {
 					fn.each(this, function(i, elem) {
 						elem = Moduler(elem);
-						var matches = regexUnit.exec(elem.css(method));
+						var matches = regexUnit.exec(elem.css(method)),
+								newValue = (fn.isCallable(value)) ? value.call(this, i, elem.css(method)) : value + '',
+								unit = matches[2] || 'px';
 
-						value = (fn.isCallable(value)) ? value.call(this, i, elem.css(method)) : value;
-						if (/^\d+(?:\.\d+)?\s*$/.test(value)) {
-							value += 'px';
+						if (/^\d+(?:\.\d+)?\s*$/.test(newValue)) {
+							newValue += unit;
 						}
-						elem.css(prop, value);
+						elem.css(prop, newValue);
 					});
 					return this;
 				} else {
@@ -1509,6 +1527,121 @@
 				}
 			};
 		});
+
+		(function() {
+			function getWidthHeight(element, type, adjustments, value, addons) {
+				if (fn.isDefined(value)) {
+					if (element.length) {
+						fn.each(element, function(i, elem) {
+							elem = Moduler(elem);
+							var adjustValue = 0,
+									addonValue = 0,
+									matches,
+									newValue,
+									borderBox = elem.css('box-sizing').toLowerCase() === 'border-box';
+
+							if (fn.isNumber(value) || (fn.isString(value) && value.trim())) {
+								// Change to string
+								value += '';
+								if (matches = regexUnit.exec(value)) {
+									if (addons) {
+										fn.each(addons, function() {
+											addonValue += parseInt(elem.css(this)) || 0;
+										});
+									}
+
+									if (!borderBox) {
+										fn.each(adjustments, function() {
+											adjustValue += parseInt(elem.css(this)) || 0;
+										});
+									}
+
+									if (fn.isDefined(matches[2])) {
+										// If the value has the unit
+										// Assign it to element and let the browser calculate the final value by px
+										newValue = elem.css(type, value).css(type);
+									} else {
+										newValue = (parseInt(matches[1]) || 0) - adjustValue - addonValue;
+									}
+
+									if (!newValue || newValue < 0) {
+										newValue = 0;
+									}
+
+									elem.css(type, newValue + 'px');
+								}
+							} else if (fn.isCallable(value)) {
+								getWidthHeight(element, type, adjustments, value.call(this, i, elem.css(type)), addons);
+							}
+						});
+					}
+					return element;
+				} else {
+					var borderBox = element.css('box-sizing').toLowerCase() === 'border-box',
+							value = parseInt(element.css(type));
+
+					if (!borderBox) {
+						fn.each(adjustments, function() {
+							value += parseInt(element.css(this)) || 0;
+						});
+					}
+
+					if (addons) {
+						fn.each(addons, function() {
+							value += parseInt(element.css(this)) || 0;
+						});
+					}
+
+					return value;
+				}
+			}
+
+			/**
+			 * [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
+			defaultPrototype.innerHeight = function(value) {
+				return getWidthHeight(this, 'height', ['padding-top', 'padding-bottom'], value);
+			};
+
+			/**
+			 * [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
+			defaultPrototype.outerHeight = function(value, includeMargin) {
+				if (fn.isBoolean(value)) {
+					includeMargin = value;
+					value = undefined;
+				}
+
+				return getWidthHeight(this, 'height', ['padding-top', 'padding-bottom'], value, (includeMargin) ? ['margin-top', 'margin-bottom'] : null);
+			};
+
+				/**
+				 * [description]
+				 * @param  {[type]} value [description]
+				 * @return {[type]}       [description]
+				 */
+				defaultPrototype.innerWidth = function(value) {
+					return getWidthHeight(this, 'width', ['padding-left', 'padding-right'], value);
+				};
+
+				/**
+				 * [description]
+				 * @param  {[type]} value [description]
+				 * @return {[type]}       [description]
+				 */
+				defaultPrototype.outerWidth = function(value, includeMargin) {
+					if (fn.isBoolean(value)) {
+						includeMargin = value;
+						value = undefined;
+					}
+
+					return getWidthHeight(this, 'width', ['padding-left', 'padding-right'], value, (includeMargin) ? ['margin-left', 'margin-right'] : null);
+				};
+		})();
 
 		fn.extend(ElementCollection.prototype, defaultPrototype);
 
