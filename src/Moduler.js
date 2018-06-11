@@ -178,8 +178,17 @@
 		 */
 		each: function(object, callback) {
 			// Object.getPrototypeOf support IE9
-			var prototype = (object.__proto__ || Object.getPrototypeOf(object));
-			if (prototype && prototype.forEach && fn.isNative(prototype.forEach)) {
+			var prototype = (object.__proto__ || Object.getPrototypeOf(object)),
+					index;
+
+			if (fn.isArray(object)) {
+				for (index = 0; index < object.length; index++) {
+					result = callback.call(object[index], index, object[index], object);
+					if (fn.isDefined(result) && !result) {
+						break;
+					}
+				}
+			} else if (prototype && prototype.forEach && fn.isNative(prototype.forEach)) {
 				var skip = false;
 				object.forEach(function(element, index, object) {
 					if (!skip) {
@@ -192,7 +201,7 @@
 			} else if (prototype && prototype.item && fn.isNative(prototype.item)) {
 				fn.each(slice.call(object), callback);
 			} else if (fn.isObject(object)) {
-				for (var index in object) {
+				for (index in object) {
 					var result = callback.call(object[index], index, object[index], object);
 					if (fn.isDefined(result) && !result) {
 						break;
@@ -1234,11 +1243,171 @@
 			fn.each(['after', 'before', 'append', 'prepend', 'appendTo', 'prependTo'], function(i, method) {
 				var reverse = (method.indexOf('To') !== -1);
 
+				/**
+				 * [description]
+				 * @param  {[type]} element [description]
+				 * @return {[type]}         [description]
+				 */
 				defaultPrototype[method] = function(element) {
 					insertElement((reverse) ? [element, this] : [this, element], i % 2 === 1, (i < 2));
 					return this;
 				};
 			});
+		})();
+
+		(function() {
+			function EventEmitter(element, event) {
+				this.element = element;
+				this.event = event;
+				this.default = element[event];
+				this.callback = [];
+			}
+
+			fn.extend(EventEmitter.prototype, {
+				register: function(namespaces, selector, callback) {
+					this.callback.push({
+						namespaces: namespaces,
+						callback: callback
+					});
+
+					return this;
+				},
+
+				trigger: function(e, namespaces) {
+					if (namespaces && fn.isString(namespaces)) {
+						namespaces = selector.split('.');
+					} else {
+						namespaces = [];
+					}
+
+					fn.each(this.callback, function(i, object) {
+						if (!namespaces.length) {
+							object.callback(this.element, e);
+						} else {
+							if (namespaces.every(function(value) {
+								return object.namespaces.includes(value);
+							})) {
+								object.callback(this.element, e);
+							}
+						}
+					});
+
+					return this;
+				},
+
+				remove: function(namespaces) {
+					var self = this;
+					fn.each(this.callback, function(i) {
+						if (!namespaces.length) {
+							self.callback.splice(i, 1);
+						} else {
+							if (namespaces.every(function(value) {
+								return self.callback[i].namespaces.includes(value);
+							})) {
+								self.callback.splice(i, 1);
+							}
+						}
+					});
+
+					return this;
+				}
+			});
+
+			function setupEvent(element, events, selector, callback) {
+				events = events.split('.');
+
+				var eventName = events.shift(),
+						namespaces = events;
+
+				if (!element.eventEmitters) {
+					element.eventEmitters = {};
+				}
+
+				if (!element.eventEmitters[eventName]) {
+					element.eventEmitters[eventName] = new EventEmitter(element, eventName);
+					if (/^(DOMContentLoaded|(on)?load)$/i.test(eventName) && (element === doc || element === win)) {
+						fn.ready(callback);
+					} else {
+						var eventCallback = function(e) {
+							element.eventEmitters[eventName].trigger(e);
+						}
+
+						if (element.addEventListener) {
+							element.addEventListener(eventName, eventCallback, false);
+						} else {
+							if (eventName == 'DOMContentLoaded') {
+								eventName = 'load';
+							}
+
+							if (this.attachEvent) {
+								element.attachEvent('on' + eventName, eventCallback);
+							} else {
+								element['on' + eventName] = eventCallback;
+							}
+						}
+					}
+				}
+
+				element.eventEmitters[eventName].register(events, selector, callback);
+
+				return this;
+			}
+
+			/**
+			 * [description]
+			 * @param  {[type]}   events   [description]
+			 * @param  {[type]}   selector [description]
+			 * @param  {Function} callback [description]
+			 * @return {[type]}            [description]
+			 */
+			defaultPrototype.on = function(events, selector, callback) {
+				if (fn.isString(events)) {
+					events = events.trim();
+					if (events) {
+						if (selector) {
+							events = events.split(' ');
+							if (fn.isCallable(selector)) {
+								callback = selector;
+								selector = null;
+							}
+
+							if (fn.isCallable(callback)) {
+								fn.each(this, function(i, elem) {
+									fn.each(events, function() {
+										setupEvent(elem, this, selector, callback);
+									});
+								});
+							}
+						}
+					}
+				}
+				return this;
+			};
+
+			/**
+			 * [description]
+			 * @param  {[type]} events [description]
+			 * @return {[type]}        [description]
+			 */
+			defaultPrototype.off = function(events) {
+				if (fn.isString(events)) {
+					if (events = events.trim()) {
+						fn.each(this, function(i, elem) {
+							if (elem.eventEmitters) {
+								fn.each(events.split(' '), function() {
+									var delimiter = this.split('.'),
+											eventName = delimiter.shift(),
+											namespaces = delimiter;
+
+									if (elem.eventEmitters[eventName]) {
+										elem.eventEmitters[eventName].remove(namespaces);
+									}
+								});
+							}
+						});
+					}
+				}
+			};
 		})();
 
 		fn.extend(ElementCollection.prototype, defaultPrototype);
