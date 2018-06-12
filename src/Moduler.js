@@ -398,6 +398,73 @@
 		}
 	};
 
+	fn.CubicBezier = (function() {
+		/**
+		 * [CubicBezier description]
+		 * @param       {[type]} p1x [description]
+		 * @param       {[type]} p1y [description]
+		 * @param       {[type]} p2x [description]
+		 * @param       {[type]} p2y [description]
+		 * @constructor
+		 */
+		function CubicBezier(p1x, p1y, p2x, p2y) {
+			this.p0 = {x: 0, y: 0};
+			this.p1 = {x: p1x, y: p1y};
+			this.p2 = {x: p2x, y: p2y};
+			this.p3 = {x: 1, y: 1};
+		}
+
+	  function a(p1, p2) {
+			return 1.0 - 3.0 * p2 + 3.0 * p1;
+		}
+
+	  function b(p1, p2) {
+			return 3.0 * p2 - 6.0 * p1;
+		}
+
+	  function c(p1) {
+			return 3.0 * p1;
+		}
+
+		function calcBezier(t, p1, p2) {
+    	return ((a(p1, p2) * t + b(p1, p2)) * t + c(p1)) * t;
+		}
+
+		function getSlope(t, p1, p2) {
+	    return 3.0 * a(p1, p2) * t * t + 2.0 * b(p1, p2) * t + c(p1);
+	  }
+
+		function getTForX(cubicBezierObj, x) {
+	    // Newton raphson iteration
+	    var guessT = x,
+					currentSlope,
+					i;
+
+	    for (i = 0; i < 4; i++) {
+	      currentSlope = getSlope(guessT, cubicBezierObj.p1.x, cubicBezierObj.p2.x);
+	      if (currentSlope == 0.0) {
+					return guessT;
+				}
+	      var currentX = calcBezier(guessT, cubicBezierObj.p1.x, cubicBezierObj.p2.x) - x;
+	      guessT -= currentX / currentSlope;
+	    }
+
+	    return guessT;
+	  }
+
+		CubicBezier.prototype.progress = function(value, t) {
+			// If p1 x equal y and p2 x equal y, it is a linear
+			if (this.p1.x === this.p1.y && this.p2.x === this.p2.y) {
+				return value * t;
+			}
+			var r = calcBezier(getTForX(this, t), this.p1.y, this.p2.y);
+
+			return r * value;
+		};
+
+		return CubicBezier;
+	})();
+
 	(function() {
 		function extract(keyset, value, result) {
 			var matches,
@@ -1119,7 +1186,24 @@
 					return rectbox;
 				}
 				return null;
-			}
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} selector [description]
+			 * @return {[type]}          [description]
+			 */
+			parent: function(selector) {
+				if (this.length) {
+					var elem = this[0];
+					while (!!(elem = elem.parentNode)) {
+						if (!selector || Moduler(elem).is(selector)) {
+							return Moduler(elem);
+						}
+					}
+				}
+				return Moduler();
+			},
 		};
 
 		(function() {
