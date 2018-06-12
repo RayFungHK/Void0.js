@@ -1070,6 +1070,55 @@
 				});
 
 				return this;
+			},
+
+			rectbox: function() {
+				var rect,
+						rectbox = {},
+						winElem = Moduler(win),
+						zone = {
+							width: winElem.width(),
+							height: winElem.height()
+						};
+
+				if (this.length) {
+					rect = this[0].getBoundingClientRect();
+
+					rectbox = {
+						x: rect.x || rect.left,
+						y: rect.y || rect.top,
+						width: rect.width || rect.right - rect.left,
+						height: rect.height || rect.height - rect.bottom,
+						left: rect.left,
+						right: rect.right,
+						top: rect.top,
+						bottom: rect.bottom,
+						appearOnScreen: false
+					};
+
+					rectbox.pageX = rectbox.x + win.pageXOffset;
+					rectbox.pageY = rectbox.y + win.pageYOffset;
+
+					rectbox.exposeXRatio = (zone.width - rectbox.x) / (zone.width + rectbox.width);
+					if (rectbox.exposeXRatio > 1) {
+						rectbox.exposeXRatio = 1;
+					} else if (rectbox.exposeXRatio < 0) {
+						rectbox.exposeXRatio = 0;
+					}
+					rectbox.exposeYRatio = (zone.height - rectbox.y) / (zone.height + rectbox.height);
+					if (rectbox.exposeYRatio > 1) {
+						rectbox.exposeYRatio = 1;
+					} else if (rectbox.exposeYRatio < 0) {
+						rectbox.exposeYRatio = 0;
+					}
+
+					if (rectbox.y < zone.height && rectbox.y + rectbox.height > 0 && rectbox.x < zone.width && rectbox.x + rectbox.width > 0) {
+						rectbox.appearOnScreen = true;
+					}
+
+					return rectbox;
+				}
+				return null;
 			}
 		};
 

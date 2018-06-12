@@ -40,6 +40,9 @@
       'color': '#fff',
       'padding': '1em',
       'height': '100px',
+      'position': 'absolute',
+      'left': '2000px',
+      'margin': '100em 2em',
       'box-sizing': 'border-box',
       'border': '#f00 10px solid'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
@@ -68,7 +71,7 @@
       Moduler('div').show()
     }, 1000)
 
-    console.log(Moduler('#test').innerWidth('300px'));
+    console.log(Moduler('#test').rectbox());
 
   </script>
 </body>
