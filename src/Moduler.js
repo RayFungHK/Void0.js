@@ -78,8 +78,8 @@
 	fn = {
 		/**
 		 * [description]
-		 * @param  {object} object [description]
-		 * @return {boolean}        [description]
+		 * @param	{object} object [description]
+		 * @return {boolean}				[description]
 		 */
 		isDefined: function(object) {
 			return (typeof object != 'undefined');
@@ -87,8 +87,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isNative: function(object) {
 			var type = typeof object;
@@ -97,8 +97,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isCallable: function(object) {
 			return (typeof object == 'function');
@@ -106,8 +106,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isObject: function(object) {
 			return typeof object === 'object';
@@ -115,8 +115,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isBoolean: function(object) {
 			return (typeof object === 'boolean');
@@ -124,8 +124,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isPlainObject: function(object) {
 			if (object !== null && fn.isObject(object)) {
@@ -140,8 +140,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isIterable: function(object) {
 			if (object) {
@@ -154,8 +154,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isString: function(object) {
 			return (typeof object === 'string');
@@ -163,8 +163,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isNumber: function(object) {
 			return (typeof object === 'number' && isFinite(object));
@@ -172,8 +172,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isArray: function(object) {
 			return (object && Array.isArray(object));
@@ -181,8 +181,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		isDOMElement: function(object) {
 			return object && (object.nodeType == 1 || object.nodeType == 9 || object.nodeType == 11);
@@ -190,9 +190,9 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]}   object   [description]
-		 * @param  {Function} callback [description]
-		 * @return {[type]}            [description]
+		 * @param	{[type]}	 object	 [description]
+		 * @param	{Function} callback [description]
+		 * @return {[type]}						[description]
 		 */
 		each: function(object, callback) {
 			// Object.getPrototypeOf support IE9
@@ -231,9 +231,9 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object       [description]
-		 * @param  {[type]} extendObject [description]
-		 * @return {[type]}              [description]
+		 * @param	{[type]} object			 [description]
+		 * @param	{[type]} extendObject [description]
+		 * @return {[type]}							[description]
 		 */
 		extend: function(object, extendObject) {
 			fn.each(extendObject, function(key, val) {
@@ -246,8 +246,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
 		 */
 		clone: function(object) {
 			if (!object) {
@@ -299,8 +299,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} text [description]
-		 * @return {[type]}      [description]
+		 * @param	{[type]} text [description]
+		 * @return {[type]}			[description]
 		 */
 		parseJSON: function(text) {
 			if (!text || !fn.isString(text)) {
@@ -316,8 +316,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} text [description]
-		 * @return {[type]}      [description]
+		 * @param	{[type]} text [description]
+		 * @return {[type]}			[description]
 		 */
 		parseXML: function(text) {
 			var parser;
@@ -336,8 +336,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} text [description]
-		 * @return {[type]}      [description]
+		 * @param	{[type]} text [description]
+		 * @return {[type]}			[description]
 		 */
 		camelCase: function(text) {
 			return (text) ? text.toLowerCase().replace(/[\-_\s]([\da-z])/gi, function(str, match) {
@@ -347,9 +347,9 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} a [description]
-		 * @param  {[type]} b [description]
-		 * @return {[type]}   [description]
+		 * @param	{[type]} a [description]
+		 * @param	{[type]} b [description]
+		 * @return {[type]}	 [description]
 		 */
 		comparePosition: function(a, b) {
 			return a.compareDocumentPosition ? a.compareDocumentPosition(b) : a.contains ? (a != b && a.contains(b) && 16) + (a != b && b.contains(a) && 8) + (a.sourceIndex >= 0 && b.sourceIndex >= 0 ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2) : 1) : 0;
@@ -357,8 +357,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} data [description]
-		 * @return {[type]}      [description]
+		 * @param	{[type]} data [description]
+		 * @return {[type]}			[description]
 		 */
 		param: function(data, encode) {
 			var params = [];
@@ -386,8 +386,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} element [description]
-		 * @return {[type]}         [description]
+		 * @param	{[type]} element [description]
+		 * @return {[type]}				 [description]
 		 */
 		owner: function(element) {
 			var ownerDoc = element.ownerDocument || doc;
@@ -401,10 +401,10 @@
 	fn.CubicBezier = (function() {
 		/**
 		 * [CubicBezier description]
-		 * @param       {[type]} p1x [description]
-		 * @param       {[type]} p1y [description]
-		 * @param       {[type]} p2x [description]
-		 * @param       {[type]} p2y [description]
+		 * @param			 {[type]} p1x [description]
+		 * @param			 {[type]} p1y [description]
+		 * @param			 {[type]} p2x [description]
+		 * @param			 {[type]} p2y [description]
 		 * @constructor
 		 */
 		function CubicBezier(p1x, p1y, p2x, p2y) {
@@ -435,13 +435,87 @@
 					cx: p2x,
 					cy: p2y
 				});
-				console.log(self.controls);
 			}
 		}
 
-		function b3(t, point1, control1, control2, point2){
-			return Math.pow(1 - t, 3) * point1 + 3 * Math.pow(1 - t, 2) * t * control1  + 3 * (1 - t) * Math.pow(t, 2) * control2 + Math.pow(t, 3) * point2;
+		function A(point1, control1, control2, point2) {
+			return point2 - 3 * control2 + 3 * control1 - point1;
+		}
+
+		function B(point1, control1, control2) {
+			return 3 * control2 - 6 * control1 + 3 * point1;
+		}
+
+		function C(point1, control1) {
+			return 3 * control1 - 3 * point1;
+		}
+
+		function bezier(t, point1, control1, control2, point2) {
+			return Math.pow(1 - t, 3) * point1 + 3 * Math.pow(1 - t, 2) * t * control1	+ 3 * (1 - t) * Math.pow(t, 2) * control2 + Math.pow(t, 3) * point2;
 		};
+
+		function getT(a, b, c, d, x) {
+			var aA = A(a, b, c, d),
+					aB = B(a, b, c),
+					aC = C(a, b),
+					aD = a - x;
+			return cubic(aA, aB, aC, aD);
+		}
+
+		function k(value) {
+			return (value < 0) ? -1 : 1;
+		}
+
+		function cubic(a, b, c, d) {
+			var m,
+					m2,
+					n,
+					n2,
+					x,
+					r,
+					rc,
+					theta,
+					sign,
+					dans,
+					f = (((3 * c) / a) - (((b * b) / (a * a)))) / 3,
+					g = (2 * ((b ^ 3) / (a ^ 3)) - (9 * b * c / (a * a)) + ((27 * (d / a)))) / 27,
+					h = ((g * g) / 4) + ((f ^ 3) / 27);
+
+			if (h > 0) {
+				m = -(g / 2) + Math.sqrt(h);
+				m2 = Math.pow((m * k(m)), (1 / 3)) * k(m);
+				n = -(g / 2) - Math.sqrt(h);
+				n2 = Math.pow((n * k(n)), (1 / 3)) * k(n);
+				x = (m2 + n2) - (b / (3 * a));
+			} else {
+				r = Math.sqrt((g * g / 4) - h);
+				rc = Math.pow((r * k(r)), (1 / 3)) * k(r);
+				theta = Math.acos((-g / (2 * r)));
+				x = 2 * (rc * Math.cos(theta / 3)) - (b / (3 * a));
+				x = x * 1E+14;
+				x = Math.round(x);
+				x = (x / 1E+14);
+			}
+
+			if ((f + g + h) === 0){
+				if (d < 0) {
+					sign = -1;
+				}
+				if (d >= 0) {
+					sign = 1;
+				}
+				if (sign > 0) {
+					dans = Math.pow((d / a), (1 / 3));
+					dans = dans * -1;
+				}
+				if (sign < 0) {
+					d = d * -1;
+					dans = Math.pow((d / a), (1 / 3));
+				}
+				x = dans;
+			}
+			return x;
+		}
 
 		CubicBezier.prototype.progress = function(value, t) {
 			if (t > 1) {
@@ -454,10 +528,13 @@
 				var divison = 1 / (this.controls.length - 1),
 						step = Math.floor(t / divison),
 						x,
-						y;
-				x = value * b3(t, this.controls[step].px, (step > 0) ? 1 - this.controls[step].cx : this.controls[step].cx, this.controls[step + 1].cx, this.controls[step + 1].px);
-				y = value * b3(t, this.controls[step].py, (step > 0) ? 1 - this.controls[step].cy : this.controls[step].cy, this.controls[step + 1].cy, this.controls[step + 1].py);
-				console.log(Math.atan2(x, y));
+						y,
+						guessT = 0;
+				x = bezier(t, this.controls[step].px, (step > 0) ? 1 - this.controls[step].cx : this.controls[step].cx, this.controls[step + 1].cx, this.controls[step + 1].px);
+				guessT = getT(this.controls[step].px, this.controls[step].cx, this.controls[step + 1].cx, this.controls[step + 1].px, t);
+				y = bezier(guessT, this.controls[step].py, (step > 0) ? 1 - this.controls[step].cy : this.controls[step].cy, this.controls[step + 1].cy, this.controls[step + 1].py);
+					console.log(guessT);
+				//console.log(Math.atan2(x, y));
 				return y / (divison * step + 1);
 			}
 			return 0;
@@ -559,8 +636,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} query [description]
-		 * @return {[type]}       [description]
+		 * @param	{[type]} query [description]
+		 * @return {[type]}			 [description]
 		 */
 		fn.parseQuery = function(query) {
 			var params = {};
@@ -688,7 +765,7 @@
 	var ElementCollection = (function() {
 		/**
 		 * [ElementCollection description]
-		 * @param       {[type]} elements [description]
+		 * @param			 {[type]} elements [description]
 		 * @constructor
 		 */
 		function ElementCollection(elements) {
@@ -722,8 +799,8 @@
 
 			/**
 			 * [description]
-			 * @param  {Function} callback [description]
-			 * @return {[type]}            [description]
+			 * @param	{Function} callback [description]
+			 * @return {[type]}						[description]
 			 */
 			each: function(callback) {
 				fn.each(this, callback);
@@ -732,9 +809,9 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} css   [description]
-			 * @param  {[type]} value [description]
-			 * @return {[type]}       [description]
+			 * @param	{[type]} css	 [description]
+			 * @param	{[type]} value [description]
+			 * @return {[type]}			 [description]
 			 */
 			css: function(css, value) {
 				var elem,
@@ -780,8 +857,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} css [description]
-			 * @return {[type]}     [description]
+			 * @param	{[type]} css [description]
+			 * @return {[type]}		 [description]
 			 */
 			removeCss: function(css) {
 				if (fn.isString(css)) {
@@ -803,8 +880,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} classname [description]
-			 * @return {[type]}           [description]
+			 * @param	{[type]} classname [description]
+			 * @return {[type]}					 [description]
 			 */
 			hasClass: function(classname) {
 				if (this.length) {
@@ -818,9 +895,9 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} classname   [description]
-			 * @param  {[type]} addorremove [description]
-			 * @return {[type]}             [description]
+			 * @param	{[type]} classname	 [description]
+			 * @param	{[type]} addorremove [description]
+			 * @return {[type]}						 [description]
 			 */
 			toggleClass: function(classname, addorremove) {
 				fn.each(this, function(i, elem) {
@@ -839,8 +916,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} html [description]
-			 * @return {[type]}      [description]
+			 * @param	{[type]} html [description]
+			 * @return {[type]}			[description]
 			 */
 			html: function(html) {
 				if (fn.isDefined(html)) {
@@ -891,10 +968,10 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]}   start    [description]
-			 * @param  {[type]}   end      [description]
-			 * @param  {Function} callback [description]
-			 * @return {[type]}            [description]
+			 * @param	{[type]}	 start		[description]
+			 * @param	{[type]}	 end			[description]
+			 * @param	{Function} callback [description]
+			 * @return {[type]}						[description]
 			 */
 			slice: function(start, end, callback) {
 				if (!this.length) {
@@ -912,8 +989,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} selector [description]
-			 * @return {[type]}          [description]
+			 * @param	{[type]} selector [description]
+			 * @return {[type]}					[description]
 			 */
 			is: function(selector) {
 				var found = false,
@@ -942,8 +1019,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} selector [description]
-			 * @return {[type]}          [description]
+			 * @param	{[type]} selector [description]
+			 * @return {[type]}					[description]
 			 */
 			find: function(selector) {
 				var collection = new ElementCollection(),
@@ -982,8 +1059,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} selector [description]
-			 * @return {[type]}          [description]
+			 * @param	{[type]} selector [description]
+			 * @return {[type]}					[description]
 			 */
 			children: function(selector) {
 				if (!this.length) {
@@ -1067,8 +1144,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} value [description]
-			 * @return {[type]}       [description]
+			 * @param	{[type]} value [description]
+			 * @return {[type]}			 [description]
 			 */
 			text: function(value) {
 				if (fn.isDefined(value)) {
@@ -1089,8 +1166,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} value [description]
-			 * @return {[type]}       [description]
+			 * @param	{[type]} value [description]
+			 * @return {[type]}			 [description]
 			 */
 			val: function(value) {
 				if (fn.isDefined(value)) {
@@ -1242,8 +1319,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} selector [description]
-			 * @return {[type]}          [description]
+			 * @param	{[type]} selector [description]
+			 * @return {[type]}					[description]
 			 */
 			parent: function(selector) {
 				if (this.length) {
@@ -1293,15 +1370,15 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} key  [description]
-		 * @param  {[type]} name [description]
-		 * @return {[type]}      [description]
+		 * @param	{[type]} key	[description]
+		 * @param	{[type]} name [description]
+		 * @return {[type]}			[description]
 		 */
 		/**
 		 * [description]
-		 * @param  {[type]} key  [description]
-		 * @param  {[type]} name [description]
-		 * @return {[type]}      [description]
+		 * @param	{[type]} key	[description]
+		 * @param	{[type]} name [description]
+		 * @return {[type]}			[description]
 		 */
 		fn.each(['add', 'remove'], function(key, name) {
 			defaultPrototype[name + 'Class'] = function(classname) {
@@ -1346,10 +1423,10 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} name   [description]
-			 * @param  {[type]} object [description]
-			 * @param  {[type]} clone  [description]
-			 * @return {[type]}        [description]
+			 * @param	{[type]} name	 [description]
+			 * @param	{[type]} object [description]
+			 * @param	{[type]} clone	[description]
+			 * @return {[type]}				[description]
 			 */
 			defaultPrototype.data = function(name, object, clone) {
 				if (!fn.isDefined(name)) {
@@ -1447,8 +1524,8 @@
 
 				/**
 				 * [description]
-				 * @param  {[type]} element [description]
-				 * @return {[type]}         [description]
+				 * @param	{[type]} element [description]
+				 * @return {[type]}				 [description]
 				 */
 				defaultPrototype[method] = function(element) {
 					insertElement((reverse) ? [element, this] : [this, element], i % 2 === 1, (i < 2));
@@ -1587,10 +1664,10 @@
 			}
 			/**
 			 * [description]
-			 * @param  {[type]}   events   [description]
-			 * @param  {[type]}   selector [description]
-			 * @param  {Function} callback [description]
-			 * @return {[type]}            [description]
+			 * @param	{[type]}	 events	 [description]
+			 * @param	{[type]}	 selector [description]
+			 * @param	{Function} callback [description]
+			 * @return {[type]}						[description]
 			 */
 			defaultPrototype.on = function(events, selector, callback) {
 				if (fn.isString(events)) {
@@ -1618,8 +1695,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} events [description]
-			 * @return {[type]}        [description]
+			 * @param	{[type]} events [description]
+			 * @return {[type]}				[description]
 			 */
 			defaultPrototype.off = function(events) {
 				if (fn.isString(events)) {
@@ -1783,8 +1860,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} value [description]
-			 * @return {[type]}       [description]
+			 * @param	{[type]} value [description]
+			 * @return {[type]}			 [description]
 			 */
 			defaultPrototype.innerHeight = function(value) {
 				return getWidthHeight(this, 'height', ['padding-top', 'padding-bottom'], value);
@@ -1792,8 +1869,8 @@
 
 			/**
 			 * [description]
-			 * @param  {[type]} value [description]
-			 * @return {[type]}       [description]
+			 * @param	{[type]} value [description]
+			 * @return {[type]}			 [description]
 			 */
 			defaultPrototype.outerHeight = function(value, includeMargin) {
 				if (fn.isBoolean(value)) {
@@ -1806,8 +1883,8 @@
 
 				/**
 				 * [description]
-				 * @param  {[type]} value [description]
-				 * @return {[type]}       [description]
+				 * @param	{[type]} value [description]
+				 * @return {[type]}			 [description]
 				 */
 				defaultPrototype.innerWidth = function(value) {
 					return getWidthHeight(this, 'width', ['padding-left', 'padding-right'], value);
@@ -1815,8 +1892,8 @@
 
 				/**
 				 * [description]
-				 * @param  {[type]} value [description]
-				 * @return {[type]}       [description]
+				 * @param	{[type]} value [description]
+				 * @return {[type]}			 [description]
 				 */
 				defaultPrototype.outerWidth = function(value, includeMargin) {
 					if (fn.isBoolean(value)) {
@@ -1901,7 +1978,7 @@
 	Moduler.Promise = (function() {
 		/**
 		 * [Promise description]
-		 * @param       {[type]} executor [description]
+		 * @param			 {[type]} executor [description]
 		 * @constructor
 		 */
 		function Promise(executor) {
@@ -1935,9 +2012,9 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} onFulfilled [description]
-		 * @param  {[type]} onRejected  [description]
-		 * @return {[type]}             [description]
+		 * @param	{[type]} onFulfilled [description]
+		 * @param	{[type]} onRejected	[description]
+		 * @return {[type]}						 [description]
 		 */
 		Promise.prototype.then = function(onFulfilled, onRejected) {
 			var promise = this,
@@ -1970,8 +2047,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} mixed [description]
-		 * @return {[type]}       [description]
+		 * @param	{[type]} mixed [description]
+		 * @return {[type]}			 [description]
 		 */
 		Promise.resolve = function(mixed) {
 			if (mixed instanceof Promise) {
@@ -1985,8 +2062,8 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} reason [description]
-		 * @return {[type]}        [description]
+		 * @param	{[type]} reason [description]
+		 * @return {[type]}				[description]
 		 */
 		Promise.reject = function(reason) {
 			if (reason instanceof Promise) {
