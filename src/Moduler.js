@@ -408,59 +408,111 @@
 		 * @constructor
 		 */
 		function CubicBezier(p1x, p1y, p2x, p2y) {
-			this.p0 = {x: 0, y: 0};
-			this.p1 = {x: p1x, y: p1y};
-			this.p2 = {x: p2x, y: p2y};
-			this.p3 = {x: 1, y: 1};
+			var self = this;
+			self.controls = [];
+			if (fn.isIterable(p1x)) {
+				fn.each(p1x, function() {
+					if (this.length === 4) {
+						self.controls.push({
+							px: this[0],
+							py: this[1],
+							cx: this[2],
+							cy: this[3]
+						});
+					}
+				});
+			} else {
+				// X, Y, ControlX, ControlY
+				self.controls.push({
+					px: 0,
+					py: 0,
+					cx: p1x,
+					cy: p1y
+				});
+				self.controls.push({
+					px: 1,
+					py: 1,
+					cx: p2x,
+					cy: p2y
+				});
+				console.log(self.controls);
+			}
 		}
 
-	  function a(p1, p2) {
-			return 1.0 - 3.0 * p2 + 3.0 * p1;
-		}
-
-	  function b(p1, p2) {
-			return 3.0 * p2 - 6.0 * p1;
-		}
-
-	  function c(p1) {
-			return 3.0 * p1;
-		}
-
-		function calcBezier(t, p1, p2) {
-    	return ((a(p1, p2) * t + b(p1, p2)) * t + c(p1)) * t;
-		}
-
-		function getSlope(t, p1, p2) {
-	    return 3.0 * a(p1, p2) * t * t + 2.0 * b(p1, p2) * t + c(p1);
-	  }
-
-		function getTForX(cubicBezierObj, x) {
-	    // Newton raphson iteration
-	    var guessT = x,
-					currentSlope,
-					i;
-
-	    for (i = 0; i < 4; i++) {
-	      currentSlope = getSlope(guessT, cubicBezierObj.p1.x, cubicBezierObj.p2.x);
-	      if (currentSlope == 0.0) {
-					return guessT;
-				}
-	      var currentX = calcBezier(guessT, cubicBezierObj.p1.x, cubicBezierObj.p2.x) - x;
-	      guessT -= currentX / currentSlope;
-	    }
-
-	    return guessT;
-	  }
+		function b3(t, point1, control1, control2, point2){
+			return Math.pow(1 - t, 3) * point1 + 3 * Math.pow(1 - t, 2) * t * control1  + 3 * (1 - t) * Math.pow(t, 2) * control2 + Math.pow(t, 3) * point2;
+		};
 
 		CubicBezier.prototype.progress = function(value, t) {
-			// If p1 x equal y and p2 x equal y, it is a linear
-			if (this.p1.x === this.p1.y && this.p2.x === this.p2.y) {
-				return value * t;
+			if (t > 1) {
+				return value;
+			} else if (t === 0) {
+				return 0;
 			}
-			var r = calcBezier(getTForX(this, t), this.p1.y, this.p2.y);
 
-			return r * value;
+			if (this.controls.length >= 2) {
+				var divison = 1 / (this.controls.length - 1),
+						step = Math.floor(t / divison),
+						x,
+						y;
+				x = value * b3(t, this.controls[step].px, (step > 0) ? 1 - this.controls[step].cx : this.controls[step].cx, this.controls[step + 1].cx, this.controls[step + 1].px);
+				y = value * b3(t, this.controls[step].py, (step > 0) ? 1 - this.controls[step].cy : this.controls[step].cy, this.controls[step + 1].cy, this.controls[step + 1].py);
+				console.log(Math.atan2(x, y));
+				return y / (divison * step + 1);
+			}
+			return 0;
 		};
+
+
+		fn.each({
+			easeInSine: '0.47,0,0.745,0.715',
+			easeOutSine: '0.39,0.575,0.565,1',
+			easeInOutSine: '0.445,0.05,0.55,0.95',
+			easeInQuad: '0.55,0.085,0.68,0.53',
+			easeOutQuad: '0.25,0.46,0.45,0.94',
+			easeInOutQuad: '0.455,0.03,0.515,0.955',
+			easeInCubic: '0.55,0.055,0.675,0.19',
+			easeOutCubic: '0.215,0.61,0.355,1',
+			easeInOutCubic: '0.645,0.045,0.355,1',
+			easeInQuart: '0.895,0.03,0.685,0.22',
+			easeOutQuart: '0.165,0.84,0.44,1',
+			easeInOutQuart: '0.77,0,0.175,1',
+			easeInQuint: '0.755,0.05,0.855,0.06',
+			easeOutQuint: '0.23,1,0.32,1',
+			easeInOutQuint: '0.86,0,0.07,1',
+			easeInExpo: '0.95,0.05,0.795,0.035',
+			easeOutExpo: '0.19,1,0.22,1',
+			easeInOutExpo: '1,0,0,1',
+			easeInCirc: '0.6,0.04,0.98,0.335',
+			easeOutCirc: '0.075,0.82,0.165,1',
+			easeInOutCirc: '0.785,0.135,0.15,0.86',
+			easeInBack: '0.6,-0.28,0.735,0.045',
+			easeOutBack: '0.175,0.885,0.32,1.275',
+			easeInOutBack: '0.68,-0.55,0.265,1.55'
+		}, function(easing, bezier) {
+			bezier = bezier.split(',');
+
+			CubicBezier[easing] = function() {
+				return new CubicBezier(bezier[0], bezier[1], bezier[2], bezier[3]);
+			};
+		});
+
+		fn.each({
+			easeInElastic: [
+				[0, 0, 0.5, 0.1],
+				[0, 0, 0.5, -0.1],
+				[0, 0, 0.5, 0.3],
+				[0, 0, 0.5, -0.3],
+				[0, 0, 0.5, .5],
+				[0, 0, 0.5, -.5],
+				[1, 1, 0.5, 1]
+			]
+		}, function(easing, bezier) {
+		console.log(this);
+			CubicBezier[easing] = function() {
+				return new CubicBezier(bezier);
+			};
+		});
 
 		return CubicBezier;
 	})();

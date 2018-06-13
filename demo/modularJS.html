@@ -40,9 +40,9 @@
       'color': '#fff',
       'padding': '1em',
       'height': '100px',
+      'width': '100px',
       'position': 'absolute',
-      'left': '2000px',
-      'margin': '100em 2em',
+      'left': '0px',
       'box-sizing': 'border-box',
       'border': '#f00 10px solid'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
@@ -71,8 +71,21 @@
       Moduler('div').show()
     }, 1000)
 
-    console.log((new Moduler.CubicBezier(.29,-0.73,.89,1.79)).progress(100, 0.5));
+    var t = 0;
+    var cb = new Moduler.CubicBezier(.25,1.62,.79,-1.01);
+    function run() {
+      Moduler('#test').css({
+        left: cb.progress(100, t) + 'px'
+      });
 
+      tt = setTimeout(run, 1000 / 60);
+      if (t > 1) {
+        clearTimeout(tt);
+      } else {
+        t += 0.016;
+      }
+    }
+    var tt = setTimeout(run, 100);
   </script>
 </body>
 </html>
