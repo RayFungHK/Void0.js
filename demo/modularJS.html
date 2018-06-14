@@ -72,20 +72,22 @@
     }, 1000)
 
     var t = 0;
-    var cb = Moduler.CubicBezier.easeInElastic();
+    var cb = Moduler.CubicBezier.easeInOutQuint();
+    var fps = 1000 / 60;
     function run() {
+      var v = cb.progress(400, t);
       Moduler('#test').css({
-        left: cb.progress(100, t) + 'px'
+        left: v + 'px'
       });
 
-      tt = setTimeout(run, 1000 / 60);
+      tt = setTimeout(run, fps);
       if (t > 1) {
         clearTimeout(tt);
       } else {
-        t += 0.016;
+        t += fps / 1000;
       }
     }
-    var tt = setTimeout(run, 100);
+    var tt = setTimeout(run, fps);
   </script>
 </body>
 </html>

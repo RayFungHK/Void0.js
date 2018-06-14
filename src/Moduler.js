@@ -411,31 +411,35 @@
 			var self = this;
 			self.controls = [];
 			if (fn.isIterable(p1x)) {
+				// Iterate a list of control point
 				fn.each(p1x, function() {
-					if (this.length === 4) {
+					if (this.length === 8) {
 						self.controls.push({
-							px: this[0],
-							py: this[1],
-							cx: this[2],
-							cy: this[3]
+							p0x: this[0],
+							p0y: this[1],
+							c0x: this[2],
+							c0y: this[3],
+							c1x: this[4],
+							c1y: this[5],
+							p1x: this[6],
+							p1y: this[7]
 						});
 					}
 				});
 			} else {
 				// X, Y, ControlX, ControlY
 				self.controls.push({
-					px: 0,
-					py: 0,
-					cx: p1x,
-					cy: p1y
-				});
-				self.controls.push({
-					px: 1,
-					py: 1,
-					cx: p2x,
-					cy: p2y
+					p0x: 0,
+					p0y: 0,
+					c0x: p1x,
+					c0y: p1y,
+					c1x: p2x,
+					c1y: p2y,
+					p1x: 1,
+					p1y: 1
 				});
 			}
+			console.log(self.controls);
 		}
 
 		// a: p3 - 3p2 + 3p1 - p0
@@ -457,44 +461,64 @@
 		// at³ + bt² + ct + d = 0
 
 		function calcBezier(t, point1, control1, control2, point2) {
-	    return ((a(pc0.px, pc0.cx, pc1.cx, pc1.px) * t + b(pc0.px, pc0.cx, pc1.cx)) * t + c(pc0.px, pc0.cx)) * t;
+	    return ((a(point1, control1, control2, point2) * t + b(point1, control1, control2)) * t + c(point1, control1)) * t;
 	  }
 
 		function getSlope(t, point1, control1, control2, point2) {
-	    return 3.0 * a(pc0.px, pc0.cx, pc1.cx, pc1.px) * t * t + 2.0 * b(pc0.px, pc0.cx, pc1.cx) * t + c(pc0.px, pc0.cx);
+	    return 3.0 * a(point1, control1, control2, point2) * t * t + 2.0 * b(point1, control1, control2) * t + c(point1, control1);
 	  }
 
 		function getTForX(x, point1, control1, control2, point2) {
 	    // Newton raphson iteration
 	    var t = x;
 	    for (var i = 0; i < 4; ++i) {
-	      var currentSlope = getSlope(t, pc0, pc1), currentX;
+	      var currentSlope = getSlope(t, point1, control1, control2, point2), currentX;
 	      if (currentSlope == 0.0) {
 					return t;
 				}
 
-	      currentX = calcBezier(t, pc0, pc1) - t;
+	      currentX = calcBezier(t, point1, control1, control2, point2) - t;
 	      t -= currentX / currentSlope;
 	    }
 	    return t;
 	  }
 
 		CubicBezier.prototype.progress = function(value, t) {
-			if (t > 1) {
-				return value;
-			} else if (t === 0) {
+			if (t === 0) {
 				return 0;
+			} else if (t >= 1) {
+				return value;
 			}
 
 			var ctls = this.controls;
-			if (ctls.length >= 2) {
-				var divison = 1 / (ctls.length - 1),
+			if (ctls.length) {
+				var divison = 1 / ctls.length,
 						step = Math.floor(t / divison),
 						result;
 
-				result = calcBezier(getTForX(t, ctls[step].px, ctls[step].cx, ctls[step + 1].cx, ctls[step + 1].px), ctls[step].px, ctls[step].cx, ctls[step + 1].cx, ctls[step + 1].px);
+				if (ctls.length > 1) {
+					t = (t * ctls.length) - step;
+					if (t > 1) {
+						t = 1;
+					}
+				}
 
-				return value * (divison / (step + 1)) * result;
+				result = calcBezier(
+					getTForX(
+						t,
+						0,
+						ctls[step].c0x,
+						ctls[step].c1x,
+						1
+					),
+					0,
+					ctls[step].c0y,
+					ctls[step].c1y,
+					ctls[step].p1y
+				);
+				console.log(result)
+
+				return result * value;
 			}
 			return 0;
 		};
@@ -533,15 +557,18 @@
 			};
 		});
 
+		// Custom Point and Controt
+		// 0, p0y, p1x, p1y, p2x, p2y, 1, p3y
+		// <path d="M0,60 L1.2,60.0 2.4,60.0 3.6,60.0 4.8,60.0 6.0,60.0 7.2,59.9 8.4,59.9 9.6,59.9 10.8,59.9 12.0,59.9 13.2,59.9 14.4,59.9 15.6,59.9 16.8,59.9 18.0,59.9 19.2,59.9 20.4,60.0 21.6,60.0 22.8,60.1 24.0,60.1 25.2,60.2 26.4,60.2 27.6,60.3 28.8,60.3 30.0,60.3 31.2,60.3 32.4,60.3 33.6,60.3 34.8,60.3 36.0,60.2 37.2,60.2 38.4,60.1 39.6,59.9 40.8,59.8 42.0,59.7 43.2,59.5 44.4,59.4 45.6,59.3 46.8,59.1 48.0,59.1 49.2,59.0 50.4,59.0 51.6,59.1 52.8,59.2 54.0,59.3 55.2,59.6 56.4,59.8 57.6,60.2 58.8,60.5 60.0,60.9 61.2,61.3 62.4,61.7 63.6,62.1 64.8,62.4 66.0,62.7 67.2,62.8 68.4,62.8 69.6,62.6 70.8,62.3 72.0,61.9 73.2,61.2 74.4,60.5 75.6,59.5 76.8,58.5 78.0,57.3 79.2,56.2 80.4,55.1 81.6,54.0 82.8,53.2 84.0,52.5 85.2,52.1 86.4,52.1 87.6,52.5 88.8,53.4 90.0,54.7 91.2,56.5 92.4,58.7 93.6,61.4 94.8,64.3 96.0,67.5 97.2,70.8 98.4,73.9 99.6,76.9 100.8,79.4 102.0,81.2 103.2,82.2 104.4,82.3 105.6,81.1 106.8,78.7 108.0,75.0 109.2,69.9 110.4,63.6 111.6,56.1 112.8,47.8 114.0,38.8 115.2,29.6 116.4,20.6 117.6,12.3 118.8,5.2 120.0,0"></path>
 		fn.each({
 			easeInElastic: [
-				[0, 0, 0.5, 0.2],
-				[0, 0, 0.5, -0.2],
-				[0, 0, 0.5, 0.4],
-				[0, 0, 0.5, -0.4],
-				[0, 0, 0.5, .6],
-				[0, 0, 0.5, -.6],
-				[1, 1, 0.5, 1]
+				[0, 0, .2, .03, .8, .03, 0, 0],
+				[0, 0, .2, -.03, .7, -.06, 0, 0],
+				[0, 0, .3, .06, .7, .06, 0, 0],
+				[0, 0, .3, -.06, .7, -.2, 0, 0],
+				[0, 0, .3, .2, .7, .2, 0, 0],
+				[0, 0, .3, -.2, .7, -.6, 0, 0],
+				[0, 0, .3, .6, .7, 1, 1, 1]
 			]
 		}, function(easing, bezier) {
 			CubicBezier[easing] = function() {
