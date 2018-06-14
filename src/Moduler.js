@@ -438,84 +438,46 @@
 			}
 		}
 
-		function A(point1, control1, control2, point2) {
+		// a: p3 - 3p2 + 3p1 - p0
+		function a(point1, control1, control2, point2) {
 			return point2 - 3 * control2 + 3 * control1 - point1;
 		}
 
-		function B(point1, control1, control2) {
+		// b: 3p2 - 6p1 + 3p0
+		function b(point1, control1, control2) {
 			return 3 * control2 - 6 * control1 + 3 * point1;
 		}
 
-		function C(point1, control1) {
+		// c: 3p1 - 3p0
+		function c(point1, control1) {
 			return 3 * control1 - 3 * point1;
 		}
 
-		function bezier(t, point1, control1, control2, point2) {
-			return Math.pow(1 - t, 3) * point1 + 3 * Math.pow(1 - t, 2) * t * control1	+ 3 * (1 - t) * Math.pow(t, 2) * control2 + Math.pow(t, 3) * point2;
-		};
+		// d: p0 - x
+		// at³ + bt² + ct + d = 0
 
-		function getT(a, b, c, d, x) {
-			var aA = A(a, b, c, d),
-					aB = B(a, b, c),
-					aC = C(a, b),
-					aD = a - x;
-			return cubic(aA, aB, aC, aD);
-		}
+		function calcBezier(t, point1, control1, control2, point2) {
+	    return ((a(pc0.px, pc0.cx, pc1.cx, pc1.px) * t + b(pc0.px, pc0.cx, pc1.cx)) * t + c(pc0.px, pc0.cx)) * t;
+	  }
 
-		function k(value) {
-			return (value < 0) ? -1 : 1;
-		}
+		function getSlope(t, point1, control1, control2, point2) {
+	    return 3.0 * a(pc0.px, pc0.cx, pc1.cx, pc1.px) * t * t + 2.0 * b(pc0.px, pc0.cx, pc1.cx) * t + c(pc0.px, pc0.cx);
+	  }
 
-		function cubic(a, b, c, d) {
-			var m,
-					m2,
-					n,
-					n2,
-					x,
-					r,
-					rc,
-					theta,
-					sign,
-					dans,
-					f = (((3 * c) / a) - (((b * b) / (a * a)))) / 3,
-					g = (2 * ((b ^ 3) / (a ^ 3)) - (9 * b * c / (a * a)) + ((27 * (d / a)))) / 27,
-					h = ((g * g) / 4) + ((f ^ 3) / 27);
-
-			if (h > 0) {
-				m = -(g / 2) + Math.sqrt(h);
-				m2 = Math.pow((m * k(m)), (1 / 3)) * k(m);
-				n = -(g / 2) - Math.sqrt(h);
-				n2 = Math.pow((n * k(n)), (1 / 3)) * k(n);
-				x = (m2 + n2) - (b / (3 * a));
-			} else {
-				r = Math.sqrt((g * g / 4) - h);
-				rc = Math.pow((r * k(r)), (1 / 3)) * k(r);
-				theta = Math.acos((-g / (2 * r)));
-				x = 2 * (rc * Math.cos(theta / 3)) - (b / (3 * a));
-				x = x * 1E+14;
-				x = Math.round(x);
-				x = (x / 1E+14);
-			}
-
-			if ((f + g + h) === 0){
-				if (d < 0) {
-					sign = -1;
+		function getTForX(x, point1, control1, control2, point2) {
+	    // Newton raphson iteration
+	    var t = x;
+	    for (var i = 0; i < 4; ++i) {
+	      var currentSlope = getSlope(t, pc0, pc1), currentX;
+	      if (currentSlope == 0.0) {
+					return t;
 				}
-				if (d >= 0) {
-					sign = 1;
-				}
-				if (sign > 0) {
-					dans = Math.pow((d / a), (1 / 3));
-					dans = dans * -1;
-				}
-				if (sign < 0) {
-					d = d * -1;
-					dans = Math.pow((d / a), (1 / 3));
-				}
-				x = dans;
-			}
-			return x;
-		}
+
+	      currentX = calcBezier(t, pc0, pc1) - t;
+	      t -= currentX / currentSlope;
+	    }
+	    return t;
+	  }
 
 		CubicBezier.prototype.progress = function(value, t) {
 			if (t > 1) {
@@ -524,18 +486,15 @@
 				return 0;
 			}
 
-			if (this.controls.length >= 2) {
-				var divison = 1 / (this.controls.length - 1),
+			var ctls = this.controls;
+			if (ctls.length >= 2) {
+				var divison = 1 / (ctls.length - 1),
 						step = Math.floor(t / divison),
-						x,
-						y,
-						guessT = 0;
-				x = bezier(t, this.controls[step].px, (step > 0) ? 1 - this.controls[step].cx : this.controls[step].cx, this.controls[step + 1].cx, this.controls[step + 1].px);
-				guessT = getT(this.controls[step].px, this.controls[step].cx, this.controls[step + 1].cx, this.controls[step + 1].px, t);
-				y = bezier(guessT, this.controls[step].py, (step > 0) ? 1 - this.controls[step].cy : this.controls[step].cy, this.controls[step + 1].cy, this.controls[step + 1].py);
-					console.log(guessT);
-				//console.log(Math.atan2(x, y));
-				return y / (divison * step + 1);
+						result;
+
+				result = calcBezier(getTForX(t, ctls[step].px, ctls[step].cx, ctls[step + 1].cx, ctls[step + 1].px), ctls[step].px, ctls[step].cx, ctls[step + 1].cx, ctls[step + 1].px);
+
+				return value * (divison / (step + 1)) * result;
 			}
 			return 0;
 		};
@@ -576,16 +535,15 @@
 
 		fn.each({
 			easeInElastic: [
-				[0, 0, 0.5, 0.1],
-				[0, 0, 0.5, -0.1],
-				[0, 0, 0.5, 0.3],
-				[0, 0, 0.5, -0.3],
-				[0, 0, 0.5, .5],
-				[0, 0, 0.5, -.5],
+				[0, 0, 0.5, 0.2],
+				[0, 0, 0.5, -0.2],
+				[0, 0, 0.5, 0.4],
+				[0, 0, 0.5, -0.4],
+				[0, 0, 0.5, .6],
+				[0, 0, 0.5, -.6],
 				[1, 1, 0.5, 1]
 			]
 		}, function(easing, bezier) {
-		console.log(this);
 			CubicBezier[easing] = function() {
 				return new CubicBezier(bezier);
 			};

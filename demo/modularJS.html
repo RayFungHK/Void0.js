@@ -72,7 +72,7 @@
     }, 1000)
 
     var t = 0;
-    var cb = new Moduler.CubicBezier(.25,1.62,.79,-1.01);
+    var cb = Moduler.CubicBezier.easeInElastic();
     function run() {
       Moduler('#test').css({
         left: cb.progress(100, t) + 'px'
