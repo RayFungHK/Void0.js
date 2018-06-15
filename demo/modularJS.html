@@ -8,31 +8,6 @@
   </head>
 </head>
 <body>
-  <form>
-  <select name="single">
-    <option>Single</option>
-    <option>Single2</option>
-  </select>
-
-  <br>
-  <select name="multiple" multiple="multiple">
-    <option selected="selected">Multiple</option>
-    <option>Multiple2</option>
-    <option selected="selected">Multiple3</option>
-  </select>
-
-  <br>
-  <input type="checkbox" name="check" value="check1" id="ch1">
-  <label for="ch1">check1</label>
-  <input type="checkbox" name="check" value="check2" checked="checked" id="ch2">
-  <label for="ch2">check2</label>
-
-  <br>
-  <input type="radio" name="radio" value="radio1" checked="checked" id="r1">
-  <label for="r1">radio1</label>
-  <input type="radio" name="radio" value="radio2" id="r2">
-  <label for="r2">radio2</label>
-</form>
   <div id="test" data-test="hello">Test</div>
   <div id="draw" style="position: relative; height: 100px; width: 100px;"></div>
   <script>
@@ -44,51 +19,51 @@
       'width': '100px',
       'position': 'absolute',
       'border-radius': '50%',
-      'top': '50%',
-      'left': '50%',
+      'top': '0',
+      'left': '100px',
       'text-align': 'center',
       'line-height': '100px',
       'border': '#f00 10px solid'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-    Moduler('#test').on('click', function() {
-      console.log('Testing 1');
-    }).on('click.yes.no', function() {
-      console.log('Testing 2');
-    }).click(function() {
-      console.log('Testing 3');
-    });;
-
-    Moduler('#test').trigger('click.yes');
-
-    // Moduler('<div>Inside</div>').appendTo('div');
-    // Moduler('div').append('<div>Inside</div>');
-    // Moduler('<div>Inside</div>').prependTo('div');
-    // Moduler('div').prepend('<div>Inside</div>');
-    // Moduler('div').before('<div>Before</div>');
-    // Moduler('div').after('<div>After</div>');
     setTimeout(function() {
       Moduler('div').show()
     }, 1000)
 
-    var t = 0;
-    var cb = Moduler.CubicBezier.easeOutBounce();
+    var t2 = 0;
+    var t1 = 0;
+    var tb = Moduler.CubicBezier.easeOutSine();
     var fps = 1000 / 60;
-    function run() {
-      var v = cb.progress(100, t);
+    function run2() {
+      var v = tb.progress(200, t2);
       Moduler('#test').css({
-        width: (100 + v) + 'px',
-        height: (100 + v) + 'px',
-        'line-height': (100 + v) + 'px'
+        left: (v) + 'px'
+      });
+
+      ct = setTimeout(run2, fps);
+      if (t2 > 1) {
+        clearTimeout(ct);
+      } else {
+        t2 += fps / 1000;
+      }
+      x = t2 * 100;
+    }
+
+    var cb = Moduler.CubicBezier.easeOutBounce();
+    function run() {
+      var v = cb.progress(200, t1);
+      Moduler('#test').css({
+        top: (v) + 'px'
       });
 
       tt = setTimeout(run, fps);
-      if (t > 1) {
+      if (t1 > 1) {
         clearTimeout(tt);
       } else {
-        t += fps / 1000;
+        t1 += fps / 1000;
       }
-      x = t * 100;
+      x = t1 * 100;
+
       Moduler('#draw').append(Moduler('<i></i>').css({
         display: 'block',
         width: '1px',
@@ -96,10 +71,11 @@
         position: 'absolute',
         left: x + 'px',
         'background-color': '#000',
-        bottom: (v / 4) + 'px'
+        bottom: (v / 2) + 'px'
       }));
     }
     var tt = setTimeout(run, fps);
+    var ct = setTimeout(run2, fps);
   </script>
 </body>
 </html>

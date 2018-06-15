@@ -428,87 +428,91 @@
 					initX,
 					ratioX,
 					ratioY,
-					xLength,
-					yLength;
+					xLength;
 
+			self.lastStep = 0;
 			self.controls = [];
 
-			if (fn.isString(p1x)) {
-				if (p1x && p1x[0] === 'M') {
-					if ((matches = regexMoveTo.exec(p1x)) !== null) {
-						startpoint = {x: conv(matches[1]), y: 0};
+			if (fn.isString(p1x) && p1x && p1x[0] === 'M') {
+				if ((matches = regexMoveTo.exec(p1x)) !== null) {
+					startpoint = {x: conv(matches[1]), y: 0};
 
-						ratioX = startpoint.x;
-						initX = ratioX;
+					ratioX = startpoint.x;
+					initX = ratioX;
 
-						while ((matches = regexCurve.exec(p1x)) !== null) {
-							if (matches.index === regexCurve.lastIndex) {
-								regexCurve.lastIndex++;
-							}
-							if (matches[1] === 'c' && matches[6] === null) {
-								throw new Error('Incorrect svg path c command');
-							}
-
-							if (matches[1] === 's') {
-								if (!pointset) {
-									throw new Error('Incorrect svg path s command');
-								}
-								// Get the dx1, dy1 from last point set dx2, dy2
-    						matches.splice(1, 0, pointset.p3.x - pointset.p2.x, pointset.p3.y - pointset.p2.y);
-							}
-
-							xLength = conv(matches[6]);
-							yLength = startpoint.y - conv(matches[7]);
-							pointset = {
-								p0: startpoint,
-								p1: {
-									x: conv(matches[2]) / xLength,
-									y: startpoint.y - conv(matches[3])
-								},
-								p2: {
-									x: conv(matches[4]) / xLength,
-									y: startpoint.y - conv(matches[5])
-								},
-								p3: {
-									x: startpoint.x + xLength,
-									y: yLength
-								},
-								samples: null
-							};
-
-							// if p1x < p0x or p2x > p3x, it may cause the overlayed t
-							if (pointset.p1.x < 0 || pointset.p2.x > 1) {
-								throw new Error('Invalid cubic bezier curve');
-							}
-
-							self.controls.push(pointset);
-							startpoint = fn.clone(pointset.p3);
-
-							if (startpoint.x <= ratioX) {
-								throw new Error('Current start point x less than previous point x.');
-							} else {
-								ratioX = startpoint.x;
-							}
+					while ((matches = regexCurve.exec(p1x)) !== null) {
+						if (matches.index === regexCurve.lastIndex) {
+							regexCurve.lastIndex++;
 						}
 
-						ratioX -= initX;
-						ratioY = startpoint.y;
+						if (matches[1] === 'c' && matches[6] === null) {
+							throw new Error('Incorrect svg path c command');
+						}
 
-						fn.each(self.controls, function(i) {
-							self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
-							self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
+						if (matches[1] === 's') {
+							if (!pointset) {
+								throw new Error('Incorrect svg path s command');
+							}
+							// Get the dx1, dy1 from last point set dx2, dy2
+  						matches.splice(1, 0, pointset.p3.x - pointset.p2.x, pointset.p3.y - pointset.p2.y);
+						}
 
-							self.controls[i].p1.x = self.controls[i].p0.x + (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
-							self.controls[i].p2.x = self.controls[i].p0.x + (self.controls[i].p2.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+						xLength = conv(matches[6]);
 
-							self.controls[i].p0.y /= ratioY;
-							self.controls[i].p1.y /= ratioY;
-							self.controls[i].p2.y /= ratioY;
-							self.controls[i].p3.y /= ratioY;
-						});
+						pointset = {
+							p0: startpoint,
+							p1: {
+								x: conv(matches[2]) / xLength,
+								y: startpoint.y - conv(matches[3])
+							},
+							p2: {
+								x: conv(matches[4]) / xLength,
+								y: startpoint.y - conv(matches[5])
+							},
+							p3: {
+								x: startpoint.x + xLength,
+								y: startpoint.y - conv(matches[7])
+							},
+							samples: null
+						};
 
-						self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
+						// if p1x < p0x or p2x > p3x, it may cause the overlayed t
+						if (pointset.p1.x < 0 || pointset.p2.x > 1) {
+							throw new Error('Invalid cubic bezier curve');
+						}
+
+						self.controls.push(pointset);
+						startpoint = fn.clone(pointset.p3);
+
+						if (startpoint.x <= ratioX) {
+							throw new Error('Current start point x less than previous point x.');
+						} else {
+							ratioX = startpoint.x;
+						}
 					}
+
+					ratioX -= initX;
+					ratioY = startpoint.y;
+
+					// Scale all x, y by 1:1
+					fn.each(self.controls, function(i) {
+						var rate;
+						self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
+						self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
+
+						rate = (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+						self.controls[i].p1.x = self.controls[i].p0.x + rate;
+						self.controls[i].p2.x = self.controls[i].p0.x + rate;
+
+						self.controls[i].p0.y /= ratioY;
+						self.controls[i].p1.y /= ratioY;
+						self.controls[i].p2.y /= ratioY;
+						self.controls[i].p3.y /= ratioY;
+					});
+
+					self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
+				} else {
+					throw new Error('Incorrect svg path M command');
 				}
 			} else {
 				self.controls.push({
@@ -593,8 +597,14 @@
 			return t;
 		}
 
+		/**
+		 * [description]
+		 * @param  {[type]} value [description]
+		 * @param  {[type]} t     [description]
+		 * @return {[type]}       [description]
+		 */
 		CubicBezier.prototype.progress = function(value, t) {
-			if (t === 0) {
+			if (t <= 0) {
 				return 0;
 			} else if (t >= 1) {
 				if (this.controls.length) {
@@ -606,17 +616,19 @@
 
 			var ctls = this.controls;
 			if (ctls.length) {
-				var step = 0,
-						i;
+				var step = this.lastStep;
 
-				// find step by division
-				fn.each(ctls, function(i) {
-					if (t >= this.p0.x) {
-						step = i;
-					} else {
-						return false;
+				while (ctls[step]) {
+					if (ctls[step].p0.x <= t && ctls[step].p3.x >= t) {
+						break;
+					} else if (ctls[step].p0.x > t) {
+						step--;
+					} else if (ctls[step].p3.x < t) {
+						step++;
 					}
-				});
+				}
+
+				this.lastStep = step;
 
 				return calcBezier(getTForX(t, ctls[step], this), ctls[step], 'y', this) * value;
 			}
@@ -654,15 +666,14 @@
 			};
 		});
 
-		// Custom Point and Controt
-		// 0, p0y, p1x, p1y, p2x, p2y, 1, p3y
+		// Convert SVG path to multple points Cubic Bezier
 		fn.each({
 			easeInElastic: 'M0,60c0,0,11.8,0,20,0c8,0,13,0,20,0c7.3,0,14-3,20,0c5.7,2.8,8,5,14,0s13-15,19,0c10,25,13,32,17,0s6-50,9-60',
 			easeOutElastic: 'M0.1,81.6c3-10,5-28,9-60s7-25,17,0c6,15,13,5,19,0s8.3-2.8,14,0c6,3,12.7,0,20,0c7,0,12,0,20,0c8.2,0,20,0,20,0',
 			easeInOutElastic: 'M0,71.5c9,0,14-1,23,0s14-5,20,1s6,4,7,0s14-59,16-67s6-6,11,0s10,7,17,5s19-1,26-1',
 			easeInBounce: 'M0,57.1c5-2,6-2,11,0c7-5,13-5,21,0c14-20,30-20,44,0c7-20,23-57,44-57',
 			easeOutBounce: 'M0,57.3c21,0,37-37,44-57c14,20,30,20,44,0c8,5,14,5,21,0c5,2,6,2,11,0',
-			easeInOutBounce: 'M0.1,58.4c3.2-2,3.9-2,7.1,0c3.2-3.6,5.6-3.8,9.5,0c4.2-9.3,16.1-9.3,20.3,0c4.5-20,9.3-28,19.7-28s19.1-10,23.6-30c4.2,9.3,16.1,9.3,20.3,0c3.9,3.8,6.3,3.6,9.5,0c3.2,2,3.9,2,7.1,0'
+			easeInOutBounce: 'M0.1,58.4c3.2-2,3.9-2,7.1,0c3.2-3.6,5.6-3.8,9.5,0c4.2-9.3,16.1-9.3,20.3,0c4.5-20,12.3-22,19.7-28s19.1-10,23.6-30c4.2,9.3,16.1,9.3,20.3,0c3.9,3.8,6.3,3.6,9.5,0c3.2,2,3.9,2,7.1,0'
 		}, function(easing, bezier) {
 			CubicBezier[easing] = function() {
 				return new CubicBezier(bezier);
