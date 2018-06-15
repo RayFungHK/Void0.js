@@ -400,7 +400,7 @@
 
 	fn.CubicBezier = (function() {
 		var regexMoveTo = /M(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)/g,
-				regexCurve = /(c|C)(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)/g;
+				regexCurve = /(c|s)(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)(?:,(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?))?/g;
 
 		function conv(value) {
 			if (fn.isString(value)) {
@@ -425,11 +425,11 @@
 					matches,
 					startpoint,
 					pointset,
+					initX,
 					ratioX,
 					ratioY,
 					xLength,
-					yLength,
-					yAdj;
+					yLength;
 
 			self.controls = [];
 
@@ -437,15 +437,24 @@
 				if (p1x && p1x[0] === 'M') {
 					if ((matches = regexMoveTo.exec(p1x)) !== null) {
 						startpoint = {x: conv(matches[1]), y: 0};
-						if (startpoint.x !== 0) {
-							throw new Error('The start point of x must start from 0');
-						}
 
 						ratioX = startpoint.x;
+						initX = ratioX;
 
 						while ((matches = regexCurve.exec(p1x)) !== null) {
 							if (matches.index === regexCurve.lastIndex) {
 								regexCurve.lastIndex++;
+							}
+							if (matches[1] === 'c' && matches[6] === null) {
+								throw new Error('Incorrect svg path c command');
+							}
+
+							if (matches[1] === 's') {
+								if (!pointset) {
+									throw new Error('Incorrect svg path s command');
+								}
+								// Get the dx1, dy1 from last point set dx2, dy2
+    						matches.splice(1, 0, pointset.p3.x - pointset.p2.x, pointset.p3.y - pointset.p2.y);
 							}
 
 							xLength = conv(matches[6]);
@@ -466,18 +475,32 @@
 								},
 								samples: null
 							};
+
+							// if p1x < p0x or p2x > p3x, it may cause the overlayed t
+							if (pointset.p1.x < 0 || pointset.p2.x > 1) {
+								throw new Error('Invalid cubic bezier curve');
+							}
+
 							self.controls.push(pointset);
 							startpoint = fn.clone(pointset.p3);
 
-							if (startpoint.x > ratioX) {
+							if (startpoint.x <= ratioX) {
+								throw new Error('Current start point x less than previous point x.');
+							} else {
 								ratioX = startpoint.x;
 							}
 						}
 
+						ratioX -= initX;
 						ratioY = startpoint.y;
+
 						fn.each(self.controls, function(i) {
-							self.controls[i].p0.x = 0;
-							self.controls[i].p3.x = 1;
+							self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
+							self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
+
+							self.controls[i].p1.x = self.controls[i].p0.x + (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+							self.controls[i].p2.x = self.controls[i].p0.x + (self.controls[i].p2.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+
 							self.controls[i].p0.y /= ratioY;
 							self.controls[i].p1.y /= ratioY;
 							self.controls[i].p2.y /= ratioY;
@@ -496,13 +519,12 @@
 					samples: null
 				});
 			}
-			console.log(self.controls)
 		}
 
-		// [ 1	0	0	0]
-		// [-3	3	0	0]
-		// [ 3 -6	3	0]
-		// [-1	3 -3	1]
+		// {p0, p1, p2, p3}   *		[ 1  0  0  0] = D
+		// 												[-3	 3	0	 0] = C
+		//												[ 3 -6	3	 0] = B
+		//												[-1	 3 -3  1] = A
 		function a(point1, control1, control2, point2) {
 			return point2 - 3 * control2 + 3 * control1 - point1;
 		}
@@ -530,20 +552,24 @@
 					dist,
 					t = x;
 
-
-			if (p.samples) {
-				fn.each(p.samples, function(i, value) {
-					if (i && i != p.samples.length - 1) {
-						if (value <= x) {
-							currentValue = value;
-							intervalStart = i * .1;
-						} else {
-							dist = (x - currentValue) / (value - currentValue);
-							return false;
-						}
-					}
-				})
+			if (!p.samples) {
+				p.samples = (fn.isCallable(Float32Array)) ? new Float32Array(11) : new Array(11);
+				for (i = 0; i < 11; ++i) {
+					p.samples[i] = calcBezier(i * 0.1, p, 'x');
+				}
 			}
+
+			fn.each(p.samples, function(i, value) {
+				if (i && i != p.samples.length - 1) {
+					if (value <= x) {
+						currentValue = value;
+						intervalStart = i * .1;
+					} else {
+						dist = (x - currentValue) / (value - currentValue);
+						return false;
+					}
+				}
+			});
 
 			if (!dist) {
 				dist = (x - currentValue) / (p.samples[p.samples.length - 1] - currentValue);
@@ -563,6 +589,7 @@
 				currentX = calcBezier(t, p, 'x') - x;
 				t -= currentX / currentSlope;
 			}
+
 			return t;
 		}
 
@@ -579,41 +606,22 @@
 
 			var ctls = this.controls;
 			if (ctls.length) {
-				var divison = 1 / ctls.length,
-						step = Math.floor(t / divison),
-						result,
+				var step = 0,
 						i;
 
-				if (!ctls[step].samples) {
-					ctls[step].samples = (fn.isCallable(Float32Array)) ? new Float32Array(11) : new Array(11);
-					for (i = 0; i < 11; ++i) {
-						ctls[step].samples[i] = calcBezier(i * 0.1, ctls[step], 'x');
+				// find step by division
+				fn.each(ctls, function(i) {
+					if (t >= this.p0.x) {
+						step = i;
+					} else {
+						return false;
 					}
-				}
+				});
 
-				if (ctls.length > 1) {
-					t = (t * ctls.length) - step;
-					if (t > 1) {
-						t = 1;
-					}
-				}
-
-				result = calcBezier(
-					getTForX(
-						t,
-						ctls[step],
-						this
-					),
-					ctls[step],
-					'y',
-					this
-				);
-
-				return result * value;
+				return calcBezier(getTForX(t, ctls[step], this), ctls[step], 'y', this) * value;
 			}
 			return 0;
 		};
-
 
 		fn.each({
 			easeInSine: [0.47, 0, 0.745, 0.715],
@@ -649,8 +657,12 @@
 		// Custom Point and Controt
 		// 0, p0y, p1x, p1y, p2x, p2y, 1, p3y
 		fn.each({
-			easeInElastic: 'M0,431.3c37-5.2,79-7.2,108.8,0c27.7,6.7,66.3,6,97.7,0c32.4-6.2,66.3-8.7,105,0c47.5,10.6,79,22.3,113,0c32-21,101.7-123.7,145.7,0c16,44.9,52.6,104.3,66.7,0c23.5-175,41.6-431.2,74.8-431.3',
-			easeOutElastic: 'M0,489.4c33.2,0,51.3-256.2,74.8-431.2c14-104.3,50.7-44.9,66.7,0c44,123.7,113.6,21,145.7,0c34-22.3,65.5-10.6,113,0c38.7,8.7,72.6,6.2,105,0c31.3-6,70-6.7,97.7,0c29.8,7.2,71.8,5.2,108.8,0'
+			easeInElastic: 'M0,60c0,0,11.8,0,20,0c8,0,13,0,20,0c7.3,0,14-3,20,0c5.7,2.8,8,5,14,0s13-15,19,0c10,25,13,32,17,0s6-50,9-60',
+			easeOutElastic: 'M0.1,81.6c3-10,5-28,9-60s7-25,17,0c6,15,13,5,19,0s8.3-2.8,14,0c6,3,12.7,0,20,0c7,0,12,0,20,0c8.2,0,20,0,20,0',
+			easeInOutElastic: 'M0,71.5c9,0,14-1,23,0s14-5,20,1s6,4,7,0s14-59,16-67s6-6,11,0s10,7,17,5s19-1,26-1',
+			easeInBounce: 'M0,57.1c5-2,6-2,11,0c7-5,13-5,21,0c14-20,30-20,44,0c7-20,23-57,44-57',
+			easeOutBounce: 'M0,57.3c21,0,37-37,44-57c14,20,30,20,44,0c8,5,14,5,21,0c5,2,6,2,11,0',
+			easeInOutBounce: 'M0.1,58.4c3.2-2,3.9-2,7.1,0c3.2-3.6,5.6-3.8,9.5,0c4.2-9.3,16.1-9.3,20.3,0c4.5-20,9.3-28,19.7-28s19.1-10,23.6-30c4.2,9.3,16.1,9.3,20.3,0c3.9,3.8,6.3,3.6,9.5,0c3.2,2,3.9,2,7.1,0'
 		}, function(easing, bezier) {
 			CubicBezier[easing] = function() {
 				return new CubicBezier(bezier);

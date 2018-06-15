@@ -43,9 +43,11 @@
       'height': '100px',
       'width': '100px',
       'position': 'absolute',
-      top: '50%',
-      'left': '0px',
-      'box-sizing': 'border-box',
+      'border-radius': '50%',
+      'top': '50%',
+      'left': '50%',
+      'text-align': 'center',
+      'line-height': '100px',
       'border': '#f00 10px solid'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
@@ -70,12 +72,14 @@
     }, 1000)
 
     var t = 0;
-    var cb = Moduler.CubicBezier.easeOutElastic();
+    var cb = Moduler.CubicBezier.easeOutBounce();
     var fps = 1000 / 60;
     function run() {
-      var v = cb.progress(400, t);
+      var v = cb.progress(100, t);
       Moduler('#test').css({
-        left: v + 'px'
+        width: (100 + v) + 'px',
+        height: (100 + v) + 'px',
+        'line-height': (100 + v) + 'px'
       });
 
       tt = setTimeout(run, fps);
