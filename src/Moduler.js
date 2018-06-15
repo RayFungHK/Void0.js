@@ -399,6 +399,19 @@
 	};
 
 	fn.CubicBezier = (function() {
+		var regexMoveTo = /M(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)/g,
+				regexCurve = /(c|C)(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)/g;
+
+		function conv(value) {
+			if (fn.isString(value)) {
+				if (value[0] === ',') {
+					value = value.substring(1);
+				}
+				return parseFloat(value) || 0;
+			}
+			return 0;
+		}
+
 		/**
 		 * [CubicBezier description]
 		 * @param			 {[type]} p1x [description]
@@ -408,93 +421,175 @@
 		 * @constructor
 		 */
 		function CubicBezier(p1x, p1y, p2x, p2y) {
-			var self = this;
+			var self = this,
+					matches,
+					startpoint,
+					pointset,
+					ratioX,
+					ratioY,
+					xLength,
+					yLength,
+					yAdj;
+
 			self.controls = [];
-			if (fn.isIterable(p1x)) {
-				// Iterate a list of control point
-				fn.each(p1x, function() {
-					if (this.length === 8) {
-						self.controls.push({
-							p0x: this[0],
-							p0y: this[1],
-							c0x: this[2],
-							c0y: this[3],
-							c1x: this[4],
-							c1y: this[5],
-							p1x: this[6],
-							p1y: this[7]
+
+			if (fn.isString(p1x)) {
+				if (p1x && p1x[0] === 'M') {
+					if ((matches = regexMoveTo.exec(p1x)) !== null) {
+						startpoint = {x: conv(matches[1]), y: 0};
+						if (startpoint.x !== 0) {
+							throw new Error('The start point of x must start from 0');
+						}
+
+						ratioX = startpoint.x;
+
+						while ((matches = regexCurve.exec(p1x)) !== null) {
+							if (matches.index === regexCurve.lastIndex) {
+								regexCurve.lastIndex++;
+							}
+
+							xLength = conv(matches[6]);
+							yLength = startpoint.y - conv(matches[7]);
+							pointset = {
+								p0: startpoint,
+								p1: {
+									x: conv(matches[2]) / xLength,
+									y: startpoint.y - conv(matches[3])
+								},
+								p2: {
+									x: conv(matches[4]) / xLength,
+									y: startpoint.y - conv(matches[5])
+								},
+								p3: {
+									x: startpoint.x + xLength,
+									y: yLength
+								},
+								samples: null
+							};
+							self.controls.push(pointset);
+							startpoint = fn.clone(pointset.p3);
+
+							if (startpoint.x > ratioX) {
+								ratioX = startpoint.x;
+							}
+						}
+
+						ratioY = startpoint.y;
+						fn.each(self.controls, function(i) {
+							self.controls[i].p0.x = 0;
+							self.controls[i].p3.x = 1;
+							self.controls[i].p0.y /= ratioY;
+							self.controls[i].p1.y /= ratioY;
+							self.controls[i].p2.y /= ratioY;
+							self.controls[i].p3.y /= ratioY;
 						});
+
+						self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
 					}
-				});
+				}
 			} else {
-				// X, Y, ControlX, ControlY
 				self.controls.push({
-					p0x: 0,
-					p0y: 0,
-					c0x: p1x,
-					c0y: p1y,
-					c1x: p2x,
-					c1y: p2y,
-					p1x: 1,
-					p1y: 1
+					p0: {x: 0, y: 0},
+					p1: {x: parseFloat(p1x) || 0, y: parseFloat(p1y) || 0},
+					p2: {x: parseFloat(p2x) || 0, y: parseFloat(p2y) || 0},
+					p3: {x: 1, y: 1},
+					samples: null
 				});
 			}
-			console.log(self.controls);
+			console.log(self.controls)
 		}
 
-		// a: p3 - 3p2 + 3p1 - p0
+		// [ 1	0	0	0]
+		// [-3	3	0	0]
+		// [ 3 -6	3	0]
+		// [-1	3 -3	1]
 		function a(point1, control1, control2, point2) {
 			return point2 - 3 * control2 + 3 * control1 - point1;
 		}
 
-		// b: 3p2 - 6p1 + 3p0
 		function b(point1, control1, control2) {
 			return 3 * control2 - 6 * control1 + 3 * point1;
 		}
 
-		// c: 3p1 - 3p0
 		function c(point1, control1) {
 			return 3 * control1 - 3 * point1;
 		}
 
-		// d: p0 - x
-		// at³ + bt² + ct + d = 0
+		function calcBezier(t, p, axis) {
+			return ((a(p.p0[axis], p.p1[axis], p.p2[axis], p.p3[axis]) * t + b(p.p0[axis], p.p1[axis], p.p2[axis])) * t + c(p.p0[axis], p.p1[axis])) * t + p.p0[axis];
+		}
 
-		function calcBezier(t, point1, control1, control2, point2) {
-	    return ((a(point1, control1, control2, point2) * t + b(point1, control1, control2)) * t + c(point1, control1)) * t;
-	  }
+		function getSlope(t, p, axis) {
+			return 3.0 * a(p.p0[axis], p.p1[axis], p.p2[axis], p.p3[axis]) * t * t + 2.0 * b(p.p0[axis], p.p1[axis], p.p2[axis]) * t + c(p.p0[axis], p.p1[axis]);
+		}
 
-		function getSlope(t, point1, control1, control2, point2) {
-	    return 3.0 * a(point1, control1, control2, point2) * t * t + 2.0 * b(point1, control1, control2) * t + c(point1, control1);
-	  }
+		function getTForX(x, p) {
+			var intervalStart = 0,
+					currentValue = 0,
+					lastSample = 10,
+					dist,
+					t = x;
 
-		function getTForX(x, point1, control1, control2, point2) {
-	    // Newton raphson iteration
-	    var t = x;
-	    for (var i = 0; i < 4; ++i) {
-	      var currentSlope = getSlope(t, point1, control1, control2, point2), currentX;
-	      if (currentSlope == 0.0) {
+
+			if (p.samples) {
+				fn.each(p.samples, function(i, value) {
+					if (i && i != p.samples.length - 1) {
+						if (value <= x) {
+							currentValue = value;
+							intervalStart = i * .1;
+						} else {
+							dist = (x - currentValue) / (value - currentValue);
+							return false;
+						}
+					}
+				})
+			}
+
+			if (!dist) {
+				dist = (x - currentValue) / (p.samples[p.samples.length - 1] - currentValue);
+			}
+
+			t = intervalStart + dist * .1;
+
+			// Newton raphson iteration
+			for (var i = 0; i < 4; ++i) {
+				var currentSlope = getSlope(t, p, 'x'),
+						currentX;
+
+				if (currentSlope == 0.0) {
 					return t;
 				}
 
-	      currentX = calcBezier(t, point1, control1, control2, point2) - t;
-	      t -= currentX / currentSlope;
-	    }
-	    return t;
-	  }
+				currentX = calcBezier(t, p, 'x') - x;
+				t -= currentX / currentSlope;
+			}
+			return t;
+		}
 
 		CubicBezier.prototype.progress = function(value, t) {
 			if (t === 0) {
 				return 0;
 			} else if (t >= 1) {
-				return value;
+				if (this.controls.length) {
+					return this.controls[this.controls.length - 1].p3.y * value;
+				} else {
+					return 0;
+				}
 			}
 
 			var ctls = this.controls;
 			if (ctls.length) {
 				var divison = 1 / ctls.length,
 						step = Math.floor(t / divison),
-						result;
+						result,
+						i;
+
+				if (!ctls[step].samples) {
+					ctls[step].samples = (fn.isCallable(Float32Array)) ? new Float32Array(11) : new Array(11);
+					for (i = 0; i < 11; ++i) {
+						ctls[step].samples[i] = calcBezier(i * 0.1, ctls[step], 'x');
+					}
+				}
 
 				if (ctls.length > 1) {
 					t = (t * ctls.length) - step;
@@ -506,17 +601,13 @@
 				result = calcBezier(
 					getTForX(
 						t,
-						0,
-						ctls[step].c0x,
-						ctls[step].c1x,
-						1
+						ctls[step],
+						this
 					),
-					0,
-					ctls[step].c0y,
-					ctls[step].c1y,
-					ctls[step].p1y
+					ctls[step],
+					'y',
+					this
 				);
-				console.log(result)
 
 				return result * value;
 			}
@@ -525,33 +616,31 @@
 
 
 		fn.each({
-			easeInSine: '0.47,0,0.745,0.715',
-			easeOutSine: '0.39,0.575,0.565,1',
-			easeInOutSine: '0.445,0.05,0.55,0.95',
-			easeInQuad: '0.55,0.085,0.68,0.53',
-			easeOutQuad: '0.25,0.46,0.45,0.94',
-			easeInOutQuad: '0.455,0.03,0.515,0.955',
-			easeInCubic: '0.55,0.055,0.675,0.19',
-			easeOutCubic: '0.215,0.61,0.355,1',
-			easeInOutCubic: '0.645,0.045,0.355,1',
-			easeInQuart: '0.895,0.03,0.685,0.22',
-			easeOutQuart: '0.165,0.84,0.44,1',
-			easeInOutQuart: '0.77,0,0.175,1',
-			easeInQuint: '0.755,0.05,0.855,0.06',
-			easeOutQuint: '0.23,1,0.32,1',
-			easeInOutQuint: '0.86,0,0.07,1',
-			easeInExpo: '0.95,0.05,0.795,0.035',
-			easeOutExpo: '0.19,1,0.22,1',
-			easeInOutExpo: '1,0,0,1',
-			easeInCirc: '0.6,0.04,0.98,0.335',
-			easeOutCirc: '0.075,0.82,0.165,1',
-			easeInOutCirc: '0.785,0.135,0.15,0.86',
-			easeInBack: '0.6,-0.28,0.735,0.045',
-			easeOutBack: '0.175,0.885,0.32,1.275',
-			easeInOutBack: '0.68,-0.55,0.265,1.55'
+			easeInSine: [0.47, 0, 0.745, 0.715],
+			easeOutSine: [0.39, 0.575, 0.565, 1],
+			easeInOutSine: [0.445, 0.05, 0.55, 0.95],
+			easeInQuad: [0.55, 0.085, 0.68, 0.53],
+			easeOutQuad: [0.25, 0.46, 0.45, 0.94],
+			easeInOutQuad: [0.455, 0.03, 0.515, 0.955],
+			easeInCubic: [0.55, 0.055, 0.675, 0.19],
+			easeOutCubic: [0.215, 0.61, 0.355, 1],
+			easeInOutCubic: [0.645, 0.045, 0.355, 1],
+			easeInQuart: [0.895, 0.03, 0.685, 0.22],
+			easeOutQuart: [0.165, 0.84, 0.44, 1],
+			easeInOutQuart: [0.77, 0, 0.175, 1],
+			easeInQuint: [0.755, 0.05, 0.855, 0.06],
+			easeOutQuint: [0.23, 1, 0.32, 1],
+			easeInOutQuint: [0.86, 0, 0.07, 1],
+			easeInExpo: [0.95, 0.05, 0.795, 0.035],
+			easeOutExpo: [0.19, 1, 0.22, 1],
+			easeInOutExpo: [1, 0, 0, 1],
+			easeInCirc: [0.6, 0.04, 0.98, 0.335],
+			easeOutCirc: [0.075, 0.82, 0.165, 1],
+			easeInOutCirc: [0.785, 0.135, 0.15, 0.86],
+			easeInBack: [0.6, -0.28, 0.735, 0.045],
+			easeOutBack: [0.175, 0.885, 0.32, 1.275],
+			easeInOutBack: [0.68, -0.55, 0.265, 1.55]
 		}, function(easing, bezier) {
-			bezier = bezier.split(',');
-
 			CubicBezier[easing] = function() {
 				return new CubicBezier(bezier[0], bezier[1], bezier[2], bezier[3]);
 			};
@@ -559,17 +648,9 @@
 
 		// Custom Point and Controt
 		// 0, p0y, p1x, p1y, p2x, p2y, 1, p3y
-		// <path d="M0,60 L1.2,60.0 2.4,60.0 3.6,60.0 4.8,60.0 6.0,60.0 7.2,59.9 8.4,59.9 9.6,59.9 10.8,59.9 12.0,59.9 13.2,59.9 14.4,59.9 15.6,59.9 16.8,59.9 18.0,59.9 19.2,59.9 20.4,60.0 21.6,60.0 22.8,60.1 24.0,60.1 25.2,60.2 26.4,60.2 27.6,60.3 28.8,60.3 30.0,60.3 31.2,60.3 32.4,60.3 33.6,60.3 34.8,60.3 36.0,60.2 37.2,60.2 38.4,60.1 39.6,59.9 40.8,59.8 42.0,59.7 43.2,59.5 44.4,59.4 45.6,59.3 46.8,59.1 48.0,59.1 49.2,59.0 50.4,59.0 51.6,59.1 52.8,59.2 54.0,59.3 55.2,59.6 56.4,59.8 57.6,60.2 58.8,60.5 60.0,60.9 61.2,61.3 62.4,61.7 63.6,62.1 64.8,62.4 66.0,62.7 67.2,62.8 68.4,62.8 69.6,62.6 70.8,62.3 72.0,61.9 73.2,61.2 74.4,60.5 75.6,59.5 76.8,58.5 78.0,57.3 79.2,56.2 80.4,55.1 81.6,54.0 82.8,53.2 84.0,52.5 85.2,52.1 86.4,52.1 87.6,52.5 88.8,53.4 90.0,54.7 91.2,56.5 92.4,58.7 93.6,61.4 94.8,64.3 96.0,67.5 97.2,70.8 98.4,73.9 99.6,76.9 100.8,79.4 102.0,81.2 103.2,82.2 104.4,82.3 105.6,81.1 106.8,78.7 108.0,75.0 109.2,69.9 110.4,63.6 111.6,56.1 112.8,47.8 114.0,38.8 115.2,29.6 116.4,20.6 117.6,12.3 118.8,5.2 120.0,0"></path>
 		fn.each({
-			easeInElastic: [
-				[0, 0, .2, .03, .8, .03, 0, 0],
-				[0, 0, .2, -.03, .7, -.06, 0, 0],
-				[0, 0, .3, .06, .7, .06, 0, 0],
-				[0, 0, .3, -.06, .7, -.2, 0, 0],
-				[0, 0, .3, .2, .7, .2, 0, 0],
-				[0, 0, .3, -.2, .7, -.6, 0, 0],
-				[0, 0, .3, .6, .7, 1, 1, 1]
-			]
+			easeInElastic: 'M0,431.3c37-5.2,79-7.2,108.8,0c27.7,6.7,66.3,6,97.7,0c32.4-6.2,66.3-8.7,105,0c47.5,10.6,79,22.3,113,0c32-21,101.7-123.7,145.7,0c16,44.9,52.6,104.3,66.7,0c23.5-175,41.6-431.2,74.8-431.3',
+			easeOutElastic: 'M0,489.4c33.2,0,51.3-256.2,74.8-431.2c14-104.3,50.7-44.9,66.7,0c44,123.7,113.6,21,145.7,0c34-22.3,65.5-10.6,113,0c38.7,8.7,72.6,6.2,105,0c31.3-6,70-6.7,97.7,0c29.8,7.2,71.8,5.2,108.8,0'
 		}, function(easing, bezier) {
 			CubicBezier[easing] = function() {
 				return new CubicBezier(bezier);
