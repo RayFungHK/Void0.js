@@ -16,6 +16,8 @@
 		slice = ary.slice,
 
 		container = doc.createElement('div'),
+		supportstyles = container.style,
+		supportsTransitions = 'transition' in supportstyles || 'WebkitTransition' in supportstyles || 'MozTransition' in supportstyles || 'msTransition' in supportstyles || 'OTransition' in supportstyles,
 		iframe = doc.createElement('iframe'),
 
 		// Mapping List
@@ -46,11 +48,12 @@
 		// Regex
 		regexConstructor = /^\[object .+?Constructor\]$/,
 		regexNative = new RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\/\\]/g, '\\$&').replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'),
-		regexUnit = /^\s*(?:(\d+(?:\.\d+)?)\s*(em|ex|%|px|cm|mm|in|pt|pc|ch|rem|vh|vw|vmin|vmax)|(auto))\s*$/,
+		regexUnit = /^\s*(?:(\d+(?:\.\d+)?)\s*(em|%|px|cm|mm|in|pt|pc|rem|vh|vw|vmin|vmax)|(auto))\s*$/,
 		regexCheckable = /^(checkbox|radio)$/i,
 		regexSubmitType = /^(submit|button|image|reset|file)$/i,
 		regexSubmitName = /^(input|select|textarea|keygen)$/i,
-		regexConstructor = /^\[object .+?Constructor\]$/;
+		regexConstructor = /^\[object .+?Constructor\]$/,
+		regexSideUnit = /(\d+(?:\.\d+)?\w*)(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?/;
 
 	/**
 	 * Moduler
@@ -111,6 +114,23 @@
 		 */
 		isObject: function(object) {
 			return typeof object === 'object';
+		},
+
+		/**
+		 * [description]
+		 * @param	{[type]} object [description]
+		 * @return {[type]}				[description]
+		 */
+		isEmpty: function(object) {
+			if (fn.isObject(object)) {
+				return Object.keys(object).length === 0;
+			} else if (fn.isString(object) && !object) {
+				return true;
+			} else if (fn.isIterable(object)) {
+				return object.length === 0;
+			}
+
+			return false;
 		},
 
 		/**
@@ -186,6 +206,24 @@
 		 */
 		isDOMElement: function(object) {
 			return object && (object.nodeType == 1 || object.nodeType == 9 || object.nodeType == 11);
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} object [description]
+		 * @return {[type]}        [description]
+		 */
+		isWindow: function(object) {
+			return object !== null && object === object.window;
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} object [description]
+		 * @return {[type]}        [description]
+		 */
+		isDocument: function(object) {
+			return object !== null && object.nodeType && object.nodeType === 9;
 		},
 
 		/**
@@ -395,6 +433,59 @@
 				document: ownerDoc,
 				window: ownerDoc.defaultView || ownerDoc.parentWindow
 			};
+		},
+
+		/**
+		 * [description]
+		 * @return {[type]} [description]
+		 */
+		pxConvert: function(base, value) {
+			var base = parseFloat(base) || 0,
+					matches = regexUnit.exec(value),
+					relativeValue = parseFloat(matches[1]) || 0;
+
+			if (relativeValue === 0) {
+				return 0;
+			}
+
+			// em|%|px|cm|mm|in|pt|pc|rem|vh|vw|vmin|vmax
+			switch (matches[2]) {
+				case 'px':
+					return matches[2];
+					break;
+				case 'rem':
+				case 'em':
+					return base * relativeValue;
+					break;
+				case '%':
+					return base * (relativeValue / 100);
+					break;
+				case 'cm':
+					return base * (relativeValue * 37.8);
+					break;
+				case 'mm':
+					return base * (relativeValue * 3.78);
+					break;
+				case 'in':
+					return base * (relativeValue * 96);
+					break;
+				case 'pt':
+					return base * (relativeValue * 96 / 72);
+					break;
+				case 'pc':
+					return base * (relativeValue * 96 / 12);
+					break;
+				case 'vw':
+				case 'vh':
+				case 'vmin':
+				case 'vmax':
+					return base * (relativeValue / 100);
+					break;
+				default:
+					return base;
+			}
+
+			return base;
 		}
 	};
 
@@ -435,6 +526,7 @@
 
 			if (fn.isString(p1x) && p1x && p1x[0] === 'M') {
 				if ((matches = regexMoveTo.exec(p1x)) !== null) {
+					this.isCustom = true;
 					startpoint = {x: conv(matches[1]), y: 0};
 
 					ratioX = startpoint.x;
@@ -454,7 +546,7 @@
 								throw new Error('Incorrect svg path s command');
 							}
 							// Get the dx1, dy1 from last point set dx2, dy2
-  						matches.splice(1, 0, pointset.p3.x - pointset.p2.x, pointset.p3.y - pointset.p2.y);
+							matches.splice(1, 0, pointset.p3.x - pointset.p2.x, pointset.p3.y - pointset.p2.y);
 						}
 
 						xLength = conv(matches[6]);
@@ -515,6 +607,7 @@
 					throw new Error('Incorrect svg path M command');
 				}
 			} else {
+				this.isCustom = false;
 				self.controls.push({
 					p0: {x: 0, y: 0},
 					p1: {x: parseFloat(p1x) || 0, y: parseFloat(p1y) || 0},
@@ -525,10 +618,10 @@
 			}
 		}
 
-		// {p0, p1, p2, p3}   *		[ 1  0  0  0] = D
+		// {p0, p1, p2, p3}	 *		[ 1	0	0	0] = D
 		// 												[-3	 3	0	 0] = C
 		//												[ 3 -6	3	 0] = B
-		//												[-1	 3 -3  1] = A
+		//												[-1	 3 -3	1] = A
 		function a(point1, control1, control2, point2) {
 			return point2 - 3 * control2 + 3 * control1 - point1;
 		}
@@ -599,9 +692,9 @@
 
 		/**
 		 * [description]
-		 * @param  {[type]} value [description]
-		 * @param  {[type]} t     [description]
-		 * @return {[type]}       [description]
+		 * @param	{[type]} value [description]
+		 * @param	{[type]} t		 [description]
+		 * @return {[type]}			 [description]
 		 */
 		CubicBezier.prototype.progress = function(value, t) {
 			if (t <= 0) {
@@ -1357,6 +1450,10 @@
 				return this;
 			},
 
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
 			rectbox: function() {
 				var rect,
 						rectbox = {},
@@ -1421,8 +1518,136 @@
 					}
 				}
 				return Moduler();
-			},
+			}
 		};
+
+		(function() {
+			var requestFrame = requestAnimationFrame || function(callback) {
+				setTimeout(function() {
+					callback.call(this, Date.now());
+				}, 1000 / 60);
+			};
+
+			/**
+			 * [description]
+			 * @param	{[type]} cssObj	 [description]
+			 * @param	{[type]} value		[description]
+			 * @param	{[type]} easing	 [description]
+			 * @param	{[type]} duration [description]
+			 * @return {[type]}					[description]
+			 */
+			defaultPrototype.animate = function(css, duration, easing, onCompleted) {
+				var self = this,
+						promise,
+						cubicBezier,
+						processList = [];
+
+				if (this.length) {
+					if (fn.isPlainObject(css)) {
+						duration = parseInt(duration) || 0;
+						if (duration <= 100) {
+							duration = 1000;
+						}
+
+						if (supportsTransitions) {
+							var csschanges = {},
+									hasStyle = false;
+
+							fn.each(css, function(style, value) {
+								var styleName = fn.camelCase(style);
+								if (styleName in supportstyles) {
+									csschanges[styleName] = value;
+									hasStyle = true;
+								}
+							});
+
+							if (hasStyle) {
+								var diff = [];
+								cubicBezier = new Moduler.CubicBezier(0, 0, 1, 1);
+								if (fn.isString(easing)) {
+									if (easing.substring(0, 4) === 'ease' && Moduler.CubicBezier[easing]) {
+										cubicBezier = Moduler.CubicBezier[easing]();
+									}
+								} else if (easing instanceof Moduler.CubicBezier) {
+									cubicBezier = easing;
+								}
+
+								fn.each(this, function(i, elem) {
+									fn.each(csschanges, function(style, value) {
+										var matches,
+												previousValue,
+												mElem = Moduler(elem),
+												org = mElem.css(style);
+										// Length value
+										if ((matches = regexUnit.exec(org)) !== null) {
+											org = parseFloat(matches[1]) || 0;
+
+											if ((matches = regexUnit.exec(value)) !== null && !matches[3]) {
+												if (matches[2] === 'em') {
+													value = fn.pxConvert(mElem.css('font-size'), value);
+												} else if (matches[2] === 'rem') {
+													value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
+												} else if (matches[2] === 'vh') {
+													value = fn.pxConvert(Moduler(window).height(), value);
+												} else if (matches[2] === 'vw') {
+													value = fn.pxConvert(Moduler(window).width(), value);
+												} else if (matches[2] === 'vmin') {
+													value = fn.pxConvert(Math.min(Moduler(window).width(), Moduler(window).height()), value);
+												} else if (matches[2] === 'vmax') {
+													value = fn.pxConvert(Math.max(Moduler(window).width(), Moduler(window).height()), value);
+												} else if (matches[2] === '%') {
+													previousValue = mElem.css(style);
+													mElem.css(style, value);
+													value = Moduler(elem).css(style);
+													mElem.css(style, previousValue);
+												} else {
+													value = fn.pxConvert(org, value);
+												}
+											} else {
+												value = parseFloat(value) || 0;
+											}
+
+											diff.push({
+												elem: elem,
+												style: style,
+												org: org,
+												value: value - org
+											});
+										}
+									});
+								});
+
+								promise = new Moduler.Promise(function(resolve, reject) {
+									var start;
+
+									function raf(timestamp) {
+										if (!start) {
+											start = timestamp;
+										}
+
+										var t = (timestamp - start) / duration;
+										if (t < 1) {
+											fn.each(diff, function(i, object) {
+												Moduler(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
+											});
+											requestFrame(raf);
+										} else {
+											self.css(csschanges);
+											resolve(self);
+										}
+									}
+
+									requestFrame(raf);
+								});
+								return promise;
+							}
+						}
+					}
+				}
+
+				return new Moduler.Promise(function (resolve, reject) {});
+			};
+		})();
 
 		(function() {
 			/**
@@ -1707,7 +1932,7 @@
 
 				if (!element.eventEmitters[eventName]) {
 					element.eventEmitters[eventName] = new EventEmitter(element, eventName);
-					if (/^(DOMContentLoaded|(on)?load)$/i.test(eventName) && (element === doc || element === win)) {
+					if (/^(DOMContentLoaded|(on)?load)$/i.test(eventName) && (fn.isDocument(element) || fn.isWindow(element))) {
 						fn.ready(callback);
 					} else {
 						var eventCallback = function(e) {
@@ -1880,118 +2105,95 @@
 		});
 
 		(function() {
-			function getWidthHeight(element, type, adjustments, value, addons) {
-				if (fn.isDefined(value)) {
-					if (element.length) {
-						fn.each(element, function(i, elem) {
-							elem = Moduler(elem);
-							var adjustValue = 0,
-									addonValue = 0,
-									matches,
-									newValue,
-									borderBox = elem.css('box-sizing').toLowerCase() === 'border-box';
+			function getExtra(type, value) {
+				var extra = 0,
+						matches;
 
-							if (fn.isNumber(value) || (fn.isString(value) && value.trim())) {
-								// Change to string
-								value += '';
-								if (matches = regexUnit.exec(value)) {
-									if (addons) {
-										fn.each(addons, function() {
-											addonValue += parseInt(elem.css(this)) || 0;
-										});
-									}
-
-									if (!borderBox) {
-										fn.each(adjustments, function() {
-											adjustValue += parseInt(elem.css(this)) || 0;
-										});
-									}
-
-									if (fn.isDefined(matches[2])) {
-										// If the value has the unit
-										// Assign it to element and let the browser calculate the final value by px
-										newValue = elem.css(type, value).css(type);
-									} else {
-										newValue = (parseInt(matches[1]) || 0) - adjustValue - addonValue;
-									}
-
-									if (!newValue || newValue < 0) {
-										newValue = 0;
-									}
-
-									elem.css(type, newValue + 'px');
-								}
-							} else if (fn.isCallable(value)) {
-								getWidthHeight(element, type, adjustments, value.call(this, i, elem.css(type)), addons);
-							}
-						});
+				if ((matches = regexSideUnit.exec(value)) !== null) {
+					if (type === 'height') {
+						extra += (parseFloat(matches[1]) || 0) + (parseFloat(matches[3] || matches[1]) || 0);
+					} else {
+						extra += (parseFloat(matches[2] || matches[1]) || 0) + (parseFloat(matches[4] || matches[2] || matches[1]) || 0);
 					}
-					return element;
-				} else {
-					var borderBox = element.css('box-sizing').toLowerCase() === 'border-box',
-							value = parseInt(element.css(type));
-
-					if (!borderBox) {
-						fn.each(adjustments, function() {
-							value += parseInt(element.css(this)) || 0;
-						});
-					}
-
-					if (addons) {
-						fn.each(addons, function() {
-							value += parseInt(element.css(this)) || 0;
-						});
-					}
-
-					return value;
 				}
+
+				return extra;
 			}
 
-			/**
-			 * [description]
-			 * @param	{[type]} value [description]
-			 * @return {[type]}			 [description]
-			 */
-			defaultPrototype.innerHeight = function(value) {
-				return getWidthHeight(this, 'height', ['padding-top', 'padding-bottom'], value);
-			};
+			fn.each({width: 'Width', height: 'Height'}, function(name, property) {
+				fn.each(['', 'inner', 'outer'], function(i, type) {
+					defaultPrototype[(type) ? type + property : name] = function(value, margin) {
+						var elem,
+								doc,
+								extra = 0,
+								original;
 
-			/**
-			 * [description]
-			 * @param	{[type]} value [description]
-			 * @return {[type]}			 [description]
-			 */
-			defaultPrototype.outerHeight = function(value, includeMargin) {
-				if (fn.isBoolean(value)) {
-					includeMargin = value;
-					value = undefined;
-				}
+						if (type === 'outer') {
+							if (fn.isBoolean(value)) {
+								margin = value;
+								value = undefined;
+							}
+						}
 
-				return getWidthHeight(this, 'height', ['padding-top', 'padding-bottom'], value, (includeMargin) ? ['margin-top', 'margin-bottom'] : null);
-			};
+						if (!fn.isDefined(value)) {
+							if (this.length) {
+								elem = this[0];
+								if (fn.isWindow(elem)) {
+									return (type === 'outer') ? elem['inner' + property] : elem.document.documentElement['client' + property];
+								} else if (fn.isDocument(elem)) {
+									doc = elem.documentElement;
+									return Math.max(
+										elem.body['scroll' + property],
+										doc['scroll' + property],
+										elem.body['offset' + property],
+										doc['offset' + property],
+										doc['client' + property]
+									);
+								} else {
+									if (type === 'outer') {
+										extra += getExtra(name, Moduler(elem).css('border-width'));
+										if (margin) {
+											extra += getExtra(name, Moduler(elem).css('margin'));
+										}
+									}
+									return (parseFloat((!type) ? Moduler(elem).css(name) : elem[type + property] || elem['client' + property]) || 0) + extra;
+								}
+							}
 
-				/**
-				 * [description]
-				 * @param	{[type]} value [description]
-				 * @return {[type]}			 [description]
-				 */
-				defaultPrototype.innerWidth = function(value) {
-					return getWidthHeight(this, 'width', ['padding-left', 'padding-right'], value);
-				};
+							return 0;
+						} else {
+							if (!type) {
+								this.css(name, value);
+							} else {
+								fn.each(this, function() {
+									var elem = Moduler(this),
+											boxsizing = elem.css('box-sizing').strtolower(),
+											original;
 
-				/**
-				 * [description]
-				 * @param	{[type]} value [description]
-				 * @return {[type]}			 [description]
-				 */
-				defaultPrototype.outerWidth = function(value, includeMargin) {
-					if (fn.isBoolean(value)) {
-						includeMargin = value;
-						value = undefined;
-					}
+									if (boxsizing === 'content-box') {
+										extra += getExtra(name, Moduler(elem).css('padding'));
+									}
 
-					return getWidthHeight(this, 'width', ['padding-left', 'padding-right'], value, (includeMargin) ? ['margin-left', 'margin-right'] : null);
-				};
+									if (type === 'outer') {
+										extra += getExtra(name, Moduler(elem).css('border-width'));
+										if (margin) {
+											extra += getExtra(name, Moduler(elem).css('margin'));
+										}
+									}
+
+									elem.css(name, value);
+									if (extra) {
+										elem.css(name, function(i, value) {
+											return ((parseFloat(value) || 0) - extra) + 'px';
+										});
+									}
+								});
+							}
+							return this;
+						}
+					};
+				});
+			});
 		})();
 
 		fn.extend(ElementCollection.prototype, defaultPrototype);

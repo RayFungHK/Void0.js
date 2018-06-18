@@ -17,65 +17,23 @@
       'padding': '1em',
       'height': '100px',
       'width': '100px',
+      'margin': '1em auto',
       'position': 'absolute',
       'border-radius': '50%',
       'top': '0',
       'left': '100px',
+      'font-size': '150%',
       'text-align': 'center',
       'line-height': '100px',
-      'border': '#f00 10px solid'
+      'border': '#f00 10px solid',
+      'box-sizing': 'border-box'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
-
-    setTimeout(function() {
-      Moduler('div').show()
-    }, 1000)
-
-    var t2 = 0;
-    var t1 = 0;
-    var tb = Moduler.CubicBezier.easeOutSine();
-    var fps = 1000 / 60;
-    function run2() {
-      var v = tb.progress(200, t2);
-      Moduler('#test').css({
-        left: (v) + 'px'
-      });
-
-      ct = setTimeout(run2, fps);
-      if (t2 > 1) {
-        clearTimeout(ct);
-      } else {
-        t2 += fps / 1000;
-      }
-      x = t2 * 100;
-    }
-
-    var cb = Moduler.CubicBezier.easeOutBounce();
-    function run() {
-      var v = cb.progress(200, t1);
-      Moduler('#test').css({
-        top: (v) + 'px'
-      });
-
-      tt = setTimeout(run, fps);
-      if (t1 > 1) {
-        clearTimeout(tt);
-      } else {
-        t1 += fps / 1000;
-      }
-      x = t1 * 100;
-
-      Moduler('#draw').append(Moduler('<i></i>').css({
-        display: 'block',
-        width: '1px',
-        height: '1px',
-        position: 'absolute',
-        left: x + 'px',
-        'background-color': '#000',
-        bottom: (v / 2) + 'px'
-      }));
-    }
-    var tt = setTimeout(run, fps);
-    var ct = setTimeout(run2, fps);
+console.log(Moduler('#test').outerHeight())
+    Moduler('#test').animate({
+      left: '50vh'
+    }, 1000, 'easeOutElastic').then(function(elem) {
+      console.log('done')
+    });
   </script>
 </body>
 </html>
