@@ -1748,6 +1748,59 @@
 		})();
 
 		(function() {
+			function siblingElement(object, type) {
+				var direction = type + 'Sibling',
+						elementDirection = type + 'ElementSibling';
+
+				if (!object) {
+					return null;
+				}
+
+				if (object[elementDirection]) {
+					return object[elementDirection];
+				} else if (object[direction]) {
+					while (!!(object = object[direction])) {
+						if (fn.isDOMElement(object)) {
+							return object;
+						}
+					}
+				}
+
+				return null;
+			}
+
+			fn.each('next previous'.split(' '), function() {
+				var name = this;
+				defaultPrototype[name.substring(0, 4)] = function(selector) {
+					var element = this[0];
+					if (element) {
+						while (!!(element = siblingElement(element, name))) {
+							if (!fn.isDefined(selector) || Moduler(element).is(selector)) {
+								return Moduler(element);
+							}
+						}
+					}
+					return Moduler();
+				};
+
+				defaultPrototype[name.substring(0, 4) + 'All'] = function(selector, until) {
+					var element = this[0], domList = [];
+					if (element) {
+						while (!!(element = siblingElement(element, name))) {
+							if (fn.isDefined(until) && Moduler(element).is(until)) {
+								break;
+							}
+							if (!fn.isDefined(selector) || Moduler(element).is(selector)) {
+								domList.push(element);
+							}
+						}
+					}
+					return Moduler(domList);
+				};
+			});
+		})();
+
+		(function() {
 			/**
 			 * [description]
 			 * @return {[type]} [description]
@@ -2879,7 +2932,15 @@
 		return AjaxClass;
 	})();
 
-	global.Moduler = Moduler;
-
-	Moduler.exports = null;
-})(window);
+	if (typeof define === 'function' && define.amd) {
+		// AMD loader
+		define('modulerjs', [], function() {
+	    return (global.mjs = Moduler);
+	  });
+	} else if (typeof module === 'object' && module.exports) {
+		// CommonJS
+	  module.exports = (global.mjs = Moduler);
+	} else {
+		global.mjs = Moduler;
+	}
+})(this);

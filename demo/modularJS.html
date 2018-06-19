@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,minimum-scale=1.0,initial-scale=1.0,user-scalable=yes,maximum-scale=1.0">
-  <title>ModulerJS</title>
+  <title>mjsJS</title>
   <script type="text/javascript" src="../src/Moduler.js"></script>
   </head>
 </head>
@@ -14,7 +14,7 @@
     <div id="content" style="width: 500px; height: 2000px"></div>
   </div>
   <script>
-    Moduler('#test').css({
+    mjs('#test').css({
       'background-color': '#000',
       'color': '#fff',
       'padding': '1em',
@@ -32,13 +32,13 @@
       'box-sizing': 'border-box'
     }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
 
-
-    Moduler('#test').animate({
+console.log(mjs('#test').next());
+    mjs('#test').animate({
       left: '50vh'
     }, 600, 'easeOut').then(function(elem) {
-        console.log(Moduler('#scrollTest').scrollTo(0, 500));
+        console.log(mjs('#scrollTest').scrollTo(0, 500));
     });
-    Moduler('#test').animate({
+    mjs('#test').animate({
       top: '30vh'
     }, 600, 'easeOutBounce').then(function(elem) {
       console.log('done')
