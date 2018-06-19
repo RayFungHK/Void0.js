@@ -13,7 +13,14 @@
   <div id="scrollTest" style="width: 200px; height: 200px; overflow: auto;">
     <div id="content" style="width: 500px; height: 2000px"></div>
   </div>
+  <input type="checkbox" id="chk" value="1" /><button id="th">Check</button>
   <script>
+  console.log(mjs('#chk').prop('checked'));
+  mjs('#th').click(function() {
+    console.log(mjs('#chk').checked(function(i, value) {
+      return !value;
+    }));
+  });
     mjs('#test').css({
       'background-color': '#000',
       'color': '#fff',

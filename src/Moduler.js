@@ -1252,6 +1252,12 @@
 				return Moduler(this[0].children);
 			},
 
+			/**
+			 * [description]
+			 * @param  {[type]} attr  [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
 			attr: function(attr, value) {
 				var self = this;
 				if (fn.isPlainObject(attr)) {
@@ -1274,7 +1280,7 @@
 						}
 					} else {
 						if (this.length) {
-							return (fn.isIE || !elem.getAttribute) ? this[0][attrMapping[attr.toLowerCase()] || attr] : this[0].getAttribute(attr, 2);
+							return (fn.isIE || !this[0].getAttribute) ? this[0][attrMapping[attr.toLowerCase()] || attr] : this[0].getAttribute(attr, 2);
 						}
 						return null;
 					}
@@ -1282,6 +1288,11 @@
 				return this;
 			},
 
+			/**
+			 * [description]
+			 * @param  {[type]} attr [description]
+			 * @return {[type]}      [description]
+			 */
 			removeAttr: function(attr) {
 				if (fn.isString(attr)) {
 					fn.each(this, function() {
@@ -1293,6 +1304,12 @@
 				return this;
 			},
 
+			/**
+			 * [description]
+			 * @param  {[type]} prop  [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
 			prop: function(prop, value) {
 				var elem, self = this;
 				if (fn.isPlainObject(prop)) {
@@ -1315,6 +1332,11 @@
 				return this;
 			},
 
+			/**
+			 * [description]
+			 * @param  {[type]} prop [description]
+			 * @return {[type]}      [description]
+			 */
 			removeProp: function(prop) {
 				if (fn.isString(prop)) {
 					fn.each(this, function() {
@@ -1398,6 +1420,42 @@
 						}
 					}
 					return null;
+				}
+			},
+
+			/**
+			 * [description]
+			 * @param  {Function} callback [description]
+			 * @return {[type]}            [description]
+			 */
+			filter: function(callback) {
+				var collection = new ElementCollection();
+				if (this.length && fn.isCallable(callback)) {
+					fn.each(this, function() {
+						if (callback.call(this)) {
+							collection.push(this);
+						}
+					});
+					return collection;
+				}
+				return this;
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
+			checked: function(value) {
+				if (fn.isDefined(value)) {
+					fn.each(this.filter(function() {
+						return regexCheckable.test(this.type);
+					}), function(i) {
+						Moduler(this).prop('checked', ((fn.isCallable(value)) ? value.call(this, i, Moduler(this).prop('checked')) : value) ? true : false);
+					});
+					return this;
+				} else {
+					return !!(this.prop('checked'));
 				}
 			},
 
@@ -2943,4 +3001,4 @@
 	} else {
 		global.mjs = Moduler;
 	}
-})(this);
+})((typeof window !== 'undefined') ? window : this);
