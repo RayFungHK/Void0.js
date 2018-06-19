@@ -1614,6 +1614,29 @@
 						y: this.scrollTop()
 					};
 				}
+			},
+
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
+			formdata: function() {
+				var elem,
+						formset,
+						formdata = new FormData();
+
+				if (this.length) {
+					elem = this[0]
+					formset = (elem.nodeName.toLowerCase() === 'form' && elem.elements) ? elem.elements : Moduler(elem).find('*');
+
+					Moduler(formset).filter(function() {
+						return (regexSubmitName.test(this.tagName) && !regexSubmitType.test(this.type) && !this.disabled && (!regexCheckable.test(this.type)) || this.checked);
+					}).each(function(i, elem) {
+						formdata.set(elem.name, elem.value);
+					});
+				}
+
+				return formdata;
 			}
 		};
 
