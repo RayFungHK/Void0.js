@@ -490,7 +490,7 @@
 	};
 
 	fn.CubicBezier = (function() {
-		var regexMoveTo = /M(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)/g,
+		var regexMoveTo = /M(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)/,
 				regexCurve = /(c|s)(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)(?:,(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?))?/g;
 
 		function conv(value) {
@@ -604,7 +604,7 @@
 
 					self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
 				} else {
-					throw new Error('Incorrect svg path M command');
+					throw new Error('The svg path must start from M command');
 				}
 			} else {
 				this.isCustom = false;
@@ -1264,7 +1264,7 @@
 							this.removeAttr(attr);
 						} else {
 							fn.each(this, function() {
-								var newValue = (fn.isCallable(value)) ? value.call(Jet(this).attr(attr)) : value;
+								var newValue = (fn.isCallable(value)) ? value.call(Moduler(this).attr(attr)) : value;
 								if (this.setAttribute) {
 									this.setAttribute(attr, newValue);
 								} else {
@@ -1301,9 +1301,9 @@
 					});
 				} else {
 					if (fn.isDefined(value)) {
-						fn.each(this, function() {
+						fn.each(this, function(i) {
 							var pp = propMapping[prop] || prop;
-							this[pp] = (fn.isCallable(value)) ? value.call(this) : value;
+							this[pp] = (fn.isCallable(value)) ? value.call(this, i, Moduler(this).prop(prop)) : value;
 						});
 					} else {
 						if (this.length) {
@@ -1331,8 +1331,8 @@
 			 */
 			text: function(value) {
 				if (fn.isDefined(value)) {
-					fn.each(this, function() {
-						this.innerText = (fn.isCallable(value)) ? value.call(this.innerText) : value;
+					fn.each(this, function(i) {
+						this.innerText = (fn.isCallable(value)) ? value.call(this.innerText, i, Moduler(this).text()) : value;
 					});
 					return this;
 				} else {
@@ -1366,7 +1366,7 @@
 								return value.indexOf(this.value) !== -1;
 							}).prop('selected', true);
 						} else {
-							this.value = (fn.isCallable(value)) ? value.call(this) : value;
+							this.value = (fn.isCallable(value)) ? value.call(this, i, Moduler(this).val()) : value;
 							Moduler(this).attr('value', value);
 						}
 						// Trigger onChange event
@@ -1518,8 +1518,104 @@
 					}
 				}
 				return Moduler();
+			},
+
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
+			isActive: function() {
+				if (this.length) {
+					if (doc.activeElement === this[0]) {
+						return true;
+					}
+				}
+				return false;
+			},
+
+			/**
+			 * [description]
+			 * @param  {[type]} x [description]
+			 * @param  {[type]} y [description]
+			 * @return {[type]}   [description]
+			 */
+			scrollTo: function(x, y) {
+				if (fn.isDefined(x)) {
+					if (x instanceof ElementCollection || fn.isDOMElement(x)) {
+						this.scrollTop(x).scrollLeft(x);
+					} else {
+						if (fn.isDefined(y)) {
+							this.scrollTop(parseInt(y) || 0);
+						}
+						this.scrollLeft(parseInt(x) || 0);
+					}
+					return this;
+				} else {
+					return {
+						x: this.scrollLeft(),
+						y: this.scrollTop()
+					};
+				}
 			}
 		};
+
+		fn.each({
+			scrollTop: 'height',
+			scrollLeft: 'width'
+		}, function(name, prop) {
+				var direction = name.substring(-2).toLowerCase(),
+						xyOffset = (direction == 'top') ? 'pageYOffset' : 'pageXOffset';
+
+			/**
+			 * [description]
+			 * @param  {[type]} value [description]
+			 * @return {[type]}       [description]
+			 */
+			defaultPrototype[name] = function(value) {
+				var position = 0,
+						elem;
+				if (fn.isDefined(value)) {
+					if (value instanceof ElementCollection) {
+						value = value[0];
+					}
+
+					if (fn.isDOMElement(value)) {
+						value = Moduler(value).rectbox()[direction] + this[name]() - this.rectbox()[direction];
+						if (value < 0) {
+							value = 0;
+						}
+					} else if (fn.isString(value) || fn.isString(value)) {
+						value = parseInt(value) || 0;
+					}
+
+					fn.each(this, function(i, elem) {
+						var newValue = (fn.isCallable(value)) ? value.call(elem, i, Moduler(this)[name]()) : value;
+
+						if (fn.isWindow(elem)) {
+							elem[xyOffset] = newValue;
+						} else if (fn.isDocument(elem)) {
+							elem.body[name] = newValue;
+						} else if (fn.isDOMElement(elem)) {
+							elem[name] = newValue;
+						}
+					});
+					return this;
+				} else {
+					if (!this.length) {
+						return 0;
+					}
+					elem = this[0];
+					if (fn.isWindow(elem)) {
+						position = elem[xyOffset];
+					} else if (fn.isDocument(elem)) {
+						position = elem.documentElement[name] || elem.body[name] || 0;
+					} else if (fn.isDOMElement(elem)) {
+						position = elem[name] || 0;
+					}
+					return position || 0;
+				}
+			};
+		});
 
 		(function() {
 			var requestFrame = requestAnimationFrame || function(callback) {
@@ -1574,17 +1670,19 @@
 
 								fn.each(this, function(i, elem) {
 									fn.each(csschanges, function(style, value) {
+										style = style.toLowerCase();
 										var matches,
 												previousValue,
 												mElem = Moduler(elem),
 												org = mElem.css(style);
+
 										// Length value
 										if ((matches = regexUnit.exec(org)) !== null) {
 											org = parseFloat(matches[1]) || 0;
 
 											if ((matches = regexUnit.exec(value)) !== null && !matches[3]) {
 												if (matches[2] === 'em') {
-													value = fn.pxConvert(mElem.css('font-size'), value);
+													value = fn.pxConvert((style === 'font-size') ? mElem.parent().css('font-size') : mElem.css('font-size'), value);
 												} else if (matches[2] === 'rem') {
 													value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
 												} else if (matches[2] === 'vh') {
@@ -1596,9 +1694,9 @@
 												} else if (matches[2] === 'vmax') {
 													value = fn.pxConvert(Math.max(Moduler(window).width(), Moduler(window).height()), value);
 												} else if (matches[2] === '%') {
+													// Get Computed Style value
 													previousValue = mElem.css(style);
-													mElem.css(style, value);
-													value = Moduler(elem).css(style);
+													value = mElem.css(style, value).css(style);
 													mElem.css(style, previousValue);
 												} else {
 													value = fn.pxConvert(org, value);
@@ -2073,37 +2171,6 @@
 			});
 		})();
 
-		fn.each(['Width', 'Height'], function(key, name) {
-			var method = name.toLowerCase();
-			defaultPrototype[method] = function(value) {
-				if (fn.isDefined(value)) {
-					fn.each(this, function(i, elem) {
-						elem = Moduler(elem);
-						var matches = regexUnit.exec(elem.css(method)),
-								newValue = (fn.isCallable(value)) ? value.call(this, i, elem.css(method)) : value + '',
-								unit = matches[2] || 'px';
-
-						if (/^\d+(?:\.\d+)?\s*$/.test(newValue)) {
-							newValue += unit;
-						}
-						elem.css(prop, newValue);
-					});
-					return this;
-				} else {
-					if (this.length) {
-						if (this[0] === win) {
-							return parseInt(win['inner' + name]);
-						} else if (this[0] === doc) {
-							return parseInt(this[0].documentElement['client' + name] || Moduler(this[0]).css('client' + name));
-						} else {
-							return parseInt(this.css(method));
-						}
-					}
-					return 0;
-				}
-			};
-		});
-
 		(function() {
 			function getExtra(type, value) {
 				var extra = 0,
@@ -2165,10 +2232,11 @@
 							if (!type) {
 								this.css(name, value);
 							} else {
-								fn.each(this, function() {
+								fn.each(this, function(i) {
 									var elem = Moduler(this),
-											boxsizing = elem.css('box-sizing').strtolower(),
-											original;
+											boxsizing = elem.css('box-sizing').toLowerCase(),
+											original,
+											newValue;
 
 									if (boxsizing === 'content-box') {
 										extra += getExtra(name, Moduler(elem).css('padding'));
@@ -2181,7 +2249,8 @@
 										}
 									}
 
-									elem.css(name, value);
+									newValue = (fn.isCallable(value)) ? value.call(this, i, elem.css(name)) : value;
+									elem.css(name, newValue);
 									if (extra) {
 										elem.css(name, function(i, value) {
 											return ((parseFloat(value) || 0) - extra) + 'px';
