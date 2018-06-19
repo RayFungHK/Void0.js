@@ -1451,11 +1451,11 @@
 					fn.each(this.filter(function() {
 						return regexCheckable.test(this.type);
 					}), function(i) {
-						Moduler(this).prop('checked', ((fn.isCallable(value)) ? value.call(this, i, Moduler(this).prop('checked')) : value) ? true : false);
+						this.checked = ((fn.isCallable(value)) ? value.call(this, i, this.checked) : value) ? true : false;
 					});
 					return this;
 				} else {
-					return !!(this.prop('checked'));
+					return (this.length) ? !!this[0].checked : false;
 				}
 			},
 
@@ -1674,6 +1674,73 @@
 				}
 			};
 		});
+
+		(function() {
+			var itemOnHand = null;
+
+			defaultPrototype.dragable = function(settings) {
+				if (!fn.isPlainObject(settings)) {
+					settings = {};
+				}
+
+				fn.each(this, function(i, element) {
+					var elem = Moduler(element),
+							i = 0;
+
+					elem.attr('draggable', true);
+
+					fn.each({
+						start: 'dragstart',
+						drag: 'drag',
+						end: 'dragend',
+						drop: 'drop'
+					}, function(name, eventName) {
+						elem.on(eventName, function(e) {
+							if (name === 'start') {
+								itemOnHand = element;
+							} else if (name === 'end') {
+								itemOnHand = null;
+							}
+
+							if (fn.isCallable(settings[name])) {
+								settings[name].call(this, e);
+							}
+						});
+					});
+				});
+				return this;
+			};
+
+			defaultPrototype.dropable = function(settings) {
+				if (!fn.isPlainObject(settings)) {
+					settings = {};
+				}
+
+				fn.each(this, function() {
+					var elem = Moduler(this),
+							i = 0;
+
+					fn.each({
+						enter: 'dragenter',
+						over: 'dragover',
+						leave: 'dragleave',
+						drop: 'drop'
+					}, function(name, eventName) {
+						elem.on(eventName, function(e, target) {
+							var fireEvent = true;
+							e.draggedItem = itemOnHand;
+							if ('drop enter over'.indexOf(name) >= 0) {
+								e.preventDefault();
+							}
+
+							if (fireEvent && fn.isCallable(settings[name])) {
+								settings[name].call(this, e, target);
+							}
+						});
+					});
+				});
+			};
+		})();
 
 		(function() {
 			var requestFrame = requestAnimationFrame || function(callback) {
@@ -2085,25 +2152,25 @@
 					}
 
 					fn.each(this.callback, function(i, object) {
+						var fireEvent = true;
 						if (!namespaces.length) {
 							if (object.selector) {
+								fireEvent = false;
 								if (fn.isCallable(object.selector)) {
-									if (object.selector.call(e.target)) {
-										object.callback(this.element, e);
-									}
+									fireEvent = object.selector.call(e.target);
 								} else if (fn.isString(object.selector)) {
-									if (Moduler(e.target).is(object.selector)) {
-										object.callback(this.element, e);
-									}
+									fireEvent = Moduler(e.target).is(object.selector);
 								}
-							} else {
-								object.callback(this.element, e);
+							}
+
+							if (fireEvent) {
+								object.callback.call(this.element, e);
 							}
 						} else {
 							if (namespaces.every(function(value) {
 								return object.namespaces.includes(value);
 							})) {
-								object.callback(this.element, e);
+								object.callback.call(this.element, e);
 							}
 						}
 					});

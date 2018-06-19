@@ -5,51 +5,40 @@
   <meta name="viewport" content="width=device-width,minimum-scale=1.0,initial-scale=1.0,user-scalable=yes,maximum-scale=1.0">
   <title>mjsJS</title>
   <script type="text/javascript" src="../src/Moduler.js"></script>
+  <style>
+  .drag {
+    width: 100px;
+    height: 100px;
+    line-height: 100px;
+    text-align: center;
+    background: #e5e5e5;
+  }
+  .dropzone {
+    height: 200px;
+    background: #111;
+  }
+  </style>
   </head>
 </head>
 <body>
-  <div id="test" data-test="hello">Test</div>
-  <div id="draw" style="position: relative; height: 100px; width: 100px;"></div>
-  <div id="scrollTest" style="width: 200px; height: 200px; overflow: auto;">
-    <div id="content" style="width: 500px; height: 2000px"></div>
-  </div>
-  <input type="checkbox" id="chk" value="1" /><button id="th">Check</button>
-  <script>
-  console.log(mjs('#chk').prop('checked'));
-  mjs('#th').click(function() {
-    console.log(mjs('#chk').checked(function(i, value) {
-      return !value;
-    }));
-  });
-    mjs('#test').css({
-      'background-color': '#000',
-      'color': '#fff',
-      'padding': '1em',
-      'height': '100px',
-      'width': '100px',
-      'margin': '1em auto',
-      'position': 'absolute',
-      'border-radius': '50%',
-      'top': '0',
-      'left': '100px',
-      'font-size': '150%',
-      'text-align': 'center',
-      'line-height': '100px',
-      'border': '#f00 10px solid',
-      'box-sizing': 'border-box'
-    }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
+  <div class="drag">1</div>
+  <div class="drag">2</div>
+  <div class="drag">3</div>
+  <div class="drag">4</div>
+  <div class="dropzone">
 
-console.log(mjs('#test').next());
-    mjs('#test').animate({
-      left: '50vh'
-    }, 600, 'easeOut').then(function(elem) {
-        console.log(mjs('#scrollTest').scrollTo(0, 500));
-    });
-    mjs('#test').animate({
-      top: '30vh'
-    }, 600, 'easeOutBounce').then(function(elem) {
-      console.log('done')
-    });
+  </div>
+  <script>
+  mjs('.drag').dragable({
+    start: function(e) {
+      //console.log('dragstart', e);
+    }
+  });
+  mjs('.dropzone').dropable({
+    drop: function(e) {
+      console.log('drop', e.draggedItem);
+    }
+  });
   </script>
 </body>
 </html>
