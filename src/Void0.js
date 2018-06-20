@@ -1380,10 +1380,12 @@
 			},
 
 			/**
-			 * [description]
-			 * @param  {[type]} prop  [description]
-			 * @param  {[type]} value [description]
-			 * @return {[type]}       [description]
+			 * Get the value of a property for the first element
+			 * in the set of matched elements or set one or more
+			 * properties for every matched element.
+			 * @param  {string} prop  The name of the property to get.
+			 * @param  {object} value A value to set for the property. If null, the specified property will be removed (as in .removeProp()).
+			 * @return {ElementCollection}
 			 */
 			prop: function(prop, value) {
 				var elem, self = this;
@@ -1408,14 +1410,16 @@
 			},
 
 			/**
-			 * [description]
-			 * @param  {[type]} prop [description]
-			 * @return {[type]}      [description]
+			 * Remove a property from each element in the set of matched elements.
+			 * @param  {string} prop A property to remove, it can be a space-separated list of properties.
+			 * @return {ElementCollection}      [description]
 			 */
 			removeProp: function(prop) {
 				if (fn.isString(prop)) {
-					fn.each(this, function() {
-						delete this[prop];
+					fn.each(this, function(i, elem) {
+						fn.each(prop.split(' '), function() {
+							delete elem[this];
+						});
 					});
 				}
 				return this;
