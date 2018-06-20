@@ -1125,9 +1125,9 @@
 			 * Add or remove one or more classes from each element in the
 			 * set of matched elements, depending on either the class’s
 			 * presence or the value of the state argument.
-			 * @param	{[type]} classname	 [description]
-			 * @param	{[type]} addorremove [description]
-			 * @return {[type]}						 [description]
+			 * @param	{string} classname	 One or more class names (separated by spaces) to be toggled for each element in the matched set.
+			 * @param	{boolean} addorremove A Boolean (not just truthy/falsy) value to determine whether the class should be added or removed.
+			 * @return {ElementCollection}
 			 */
 			toggleClass: function(classname, addorremove) {
 				fn.each(this, function(i, elem) {
@@ -1147,9 +1147,10 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} html [description]
-			 * @return {[type]}			[description]
+			 * Get the HTML contents of the first element in the set of
+			 * matched elements or set the HTML contents of every matched element.
+			 * @param	{string} html A string of HTML to set as the content of each matched element.
+			 * @return {ElementCollection}
 			 */
 			html: function(html) {
 				if (fn.isDefined(html)) {
@@ -1163,8 +1164,8 @@
 			},
 
 			/**
-			 * [description]
-			 * @return {[type]} [description]
+			 * Shift a DOMElement (first element) and return as an ElementCollection
+			 * @return {ElementCollection}
 			 */
 			shift: function(callback) {
 				if (!this.length) {
@@ -1181,8 +1182,8 @@
 			},
 
 			/**
-			 * [description]
-			 * @return {[type]} [description]
+			 * Pop a DOMElement (last element) and return as an ElementCollection
+			 * @return {ElementCollection}
 			 */
 			pop: function(callback) {
 				if (!this.length) {
@@ -1199,11 +1200,11 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]}	 start		[description]
-			 * @param	{[type]}	 end			[description]
-			 * @param	{Function} callback [description]
-			 * @return {[type]}						[description]
+			 * Slice the ElementCollection and return as an ElementCollection
+			 * @param	{int}	 start		Zero-based index at which to begin extraction.
+			 * @param	{int}	 end			Zero-based index before which to end extraction.
+			 * @param	{Function} callback A function to execute the sliced a set of matched element, and return the rest as an ElementCollection
+			 * @return {ElementCollection}
 			 */
 			slice: function(start, end, callback) {
 				if (!this.length) {
@@ -1220,9 +1221,11 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} selector [description]
-			 * @return {[type]}					[description]
+			 * Check the current matched set of elements against a selector,
+			 * element, or Void0 object and return true if at least one of
+			 * these elements matches the given arguments.
+			 * @param	{object} selector A string containing a selector expression to match elements against.
+			 * @return {boolean}
 			 */
 			is: function(selector) {
 				var found = false,
@@ -1250,13 +1253,15 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} selector [description]
-			 * @return {[type]}					[description]
+			 * Get the descendants of each element in the current set of
+			 * matched elements, filtered by a selector, Void0 object, or element.
+			 * @param	{string} selector A string containing a selector expression to match elements against.
+			 * @return {ElementCollection}
 			 */
 			find: function(selector) {
 				var collection = new ElementCollection(),
-					elems = this;
+						elems = this;
+
 				if (fn.isString(selector)) {
 					fn.each(elems, function() {
 						fn.each(this.querySelectorAll(selector), function() {
@@ -1286,20 +1291,36 @@
 				fn.each(collection, function() {
 					delete this._added;
 				});
+
 				return collection;
 			},
 
 			/**
-			 * [description]
+			 * Get the children of each element in the set of
+			 * matched elements, optionally filtered by a selector.
 			 * @param	{[type]} selector [description]
 			 * @return {[type]}					[description]
 			 */
 			children: function(selector) {
-				if (!this.length) {
-					return new ElementCollection();
+				var collection = new ElementCollection();
+
+				if (this.length) {
+					fn.each(this, function() {
+						fn.each(this.children, function() {
+							if (!this._added) {
+								this._added = true;
+								collection.push(this);
+							}
+						});
+					});
+
+					// Clear _added flag
+					fn.each(collection, function() {
+						delete this._added;
+					});
 				}
 
-				return Void0(this[0].children);
+				return collection;
 			},
 
 			/**
