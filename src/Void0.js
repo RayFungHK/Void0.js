@@ -297,9 +297,9 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Create a deep copy of the set of object
+		 * @param	{object} object An object that will be cloned
+		 * @return {object}
 		 */
 		clone: function(object) {
 			if (!object) {
@@ -350,9 +350,9 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} text [description]
-		 * @return {[type]}			[description]
+		 * Takes a well-formed JSON string and returns the resulting JavaScript value.
+		 * @param	{string} text The JSON string to parse.
+		 * @return {object}
 		 */
 		parseJSON: function(text) {
 			if (!text || !fn.isString(text)) {
@@ -367,9 +367,9 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} text [description]
-		 * @return {[type]}			[description]
+		 * Takes a well-formed XML string and returns the resulting JavaScript value.
+		 * @param	{string} text The XML string to parse.
+		 * @return {object}
 		 */
 		parseXML: function(text) {
 			var parser;
@@ -387,9 +387,9 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} text [description]
-		 * @return {[type]}			[description]
+		 * Convert a text to camel case (space, hyphen and underscore will be removed)
+		 * @param	{string} text A test to convert to camel case
+		 * @return {string}
 		 */
 		camelCase: function(text) {
 			return (text) ? text.toLowerCase().replace(/[\-_\s]([\da-z])/gi, function(str, match) {
@@ -398,18 +398,21 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} a [description]
-		 * @param	{[type]} b [description]
-		 * @return {[type]}	 [description]
+		 * Return how one DOM position compares to another DOM position.
+		 * @param	{DOMElement} a A compare DOMElement
+		 * @param	{DOMElement} b Another DOMElement
+		 * @return {object}
 		 */
 		comparePosition: function(a, b) {
 			return a.compareDocumentPosition ? a.compareDocumentPosition(b) : a.contains ? (a != b && a.contains(b) && 16) + (a != b && b.contains(a) && 8) + (a.sourceIndex >= 0 && b.sourceIndex >= 0 ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2) : 1) : 0;
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} data [description]
+		 * Create a serialized representation of an array, a plain object,
+		 * or a ElementCollection object suitable for use in a URL query
+		 * string or Ajax request. In case a ElementCollection object is
+		 * passed, it should contain input elements with name/value properties.
+		 * @param	{object} data [description]
 		 * @return {[type]}			[description]
 		 */
 		param: function(data, encode) {
@@ -418,6 +421,10 @@
 			function buildQueryString(key, value) {
 				value = (fn.isCallable(value)) ? value() : value;
 				params.push(key + '=' + (value || ''));
+			}
+
+			if (data instanceof ElementCollection) {
+				data = data.formdata();
 			}
 
 			(function deeprun(data, prefix) {
