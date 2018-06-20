@@ -1298,8 +1298,8 @@
 			/**
 			 * Get the children of each element in the set of
 			 * matched elements, optionally filtered by a selector.
-			 * @param	{[type]} selector [description]
-			 * @return {[type]}					[description]
+			 * @param	{string} selector [description]
+			 * @return {ElementCollection}					[description]
 			 */
 			children: function(selector) {
 				var collection = new ElementCollection();
@@ -1324,10 +1324,12 @@
 			},
 
 			/**
-			 * [description]
-			 * @param  {[type]} attr  [description]
-			 * @param  {[type]} value [description]
-			 * @return {[type]}       [description]
+			 * Get the value of an attribute for the first element
+			 * in the set of matched elements or set one or more
+			 * attributes for every matched element.
+			 * @param  {string} attr  The name of the attribute to get.
+			 * @param  {object} value A value to set for the attribute. If null, the specified attribute will be removed (as in .removeAttr()).
+			 * @return {ElementCollection}
 			 */
 			attr: function(attr, value) {
 				var self = this;
@@ -1360,16 +1362,18 @@
 			},
 
 			/**
-			 * [description]
-			 * @param  {[type]} attr [description]
-			 * @return {[type]}      [description]
+			 * Remove an attribute from each element in the set of matched elements.
+			 * @param  {string} attr An attribute to remove, it can be a space-separated list of attributes.
+			 * @return {ElementCollection}
 			 */
 			removeAttr: function(attr) {
 				if (fn.isString(attr)) {
-					fn.each(this, function() {
-						if (this.removeAttribute) {
-							this.removeAttribute(attr);
-						}
+					fn.each(this, function(i, elem) {
+						fn.each(attr.split(' '), function() {
+							if (elem.removeAttribute) {
+								elem.removeAttribute(this);
+							}
+						});
 					});
 				}
 				return this;
