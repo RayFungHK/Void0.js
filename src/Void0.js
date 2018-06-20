@@ -1426,9 +1426,11 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} value [description]
-			 * @return {[type]}			 [description]
+			 * Get the combined text contents of each element in
+			 * the set of matched elements, including their descendants,
+			 * or set the text contents of the matched elements.
+			 * @param	{string} value The text to set as the content of each matched element. When Number or Boolean is supplied, it will be converted to a String representation.
+			 * @return {ElementCollection}
 			 */
 			text: function(value) {
 				if (fn.isDefined(value)) {
@@ -1448,9 +1450,11 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} value [description]
-			 * @return {[type]}			 [description]
+			 * Get the current value of the first element in the
+			 * set of matched elements or set the value of every
+			 * matched element.
+			 * @param	{string} value A string of text, a number, or an array of strings corresponding to the value of each matched element to set as selected/checked.
+			 * @return {ElementCollection}
 			 */
 			val: function(value) {
 				if (fn.isDefined(value)) {
@@ -1503,9 +1507,10 @@
 			},
 
 			/**
-			 * [description]
-			 * @param  {Function} callback [description]
-			 * @return {[type]}            [description]
+			 * Reduce the set of matched elements to those that
+			 * match the selector or pass the function’s test.
+			 * @param  {string} callback A string containing a selector expression to match the current set of elements against.
+			 * @return {ElementCollection}
 			 */
 			filter: function(callback) {
 				var collection = new ElementCollection();
