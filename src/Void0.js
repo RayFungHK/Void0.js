@@ -56,11 +56,11 @@
 		regexSideUnit = /(\d+(?:\.\d+)?\w*)(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?/;
 
 	/**
-	 * Moduler
+	 * Void0
 	 * @constructor
 	 * return ElementCollection
 	 */
-	function Moduler(object) {
+	function Void0(object) {
 		if (fn.isCallable(object)) {
 			fn.ready(object);
 			return this;
@@ -77,7 +77,7 @@
 		}
 	};
 
-	// Moduler Function
+	// Void0 Function
 	fn = {
 		/**
 		 * [description]
@@ -486,6 +486,11 @@
 			}
 
 			return base;
+		},
+
+		noConflict: function() {
+			global.__ = noConflict;
+			return Void0;
 		}
 	};
 
@@ -941,7 +946,7 @@
 		};
 	})();
 
-	fn.extend(Moduler, fn);
+	fn.extend(Void0, fn);
 
 	// ElementCollection
 	var ElementCollection = (function() {
@@ -977,7 +982,7 @@
 			length: 0,
 
 			// Add ElementCollection function here, assume chainable
-			// Usage: Moduler(selector).function([...args]);
+			// Usage: Void0(selector).function([...args]);
 
 			/**
 			 * [description]
@@ -1084,10 +1089,10 @@
 			toggleClass: function(classname, addorremove) {
 				fn.each(this, function(i, elem) {
 					classname = (fn.isCallable(classname)) ? classname.call(this.className, i, this.className) : classname;
-					if ((fn.isDefined(addorremove) && addorremove) || (!fn.isDefined(addorremove) && !Moduler(elem).hasClass(classname))) {
-						Moduler(elem).addClass(classname);
+					if ((fn.isDefined(addorremove) && addorremove) || (!fn.isDefined(addorremove) && !Void0(elem).hasClass(classname))) {
+						Void0(elem).addClass(classname);
 					} else {
-						Moduler(elem).removeClass(classname);
+						Void0(elem).removeClass(classname);
 					}
 					if (!elem.className) {
 						elem.removeAttribute('class');
@@ -1123,10 +1128,10 @@
 
 				if (fn.isDefined(callback) && fn.isCallable(callback)) {
 					var elem = ary.shift.call(this);
-					callback.call(Moduler(elem));
+					callback.call(Void0(elem));
 					return this;
 				} else {
-					return Moduler(this[0]);
+					return Void0(this[0]);
 				}
 			},
 
@@ -1141,10 +1146,10 @@
 
 				if (fn.isDefined(callback) && fn.isCallable(callback)) {
 					var elem = ary.pop.call(this);
-					callback.call(Moduler(elem));
+					callback.call(Void0(elem));
 					return this;
 				} else {
-					return Moduler(this[this.length - 1]);
+					return Void0(this[this.length - 1]);
 				}
 			},
 
@@ -1162,10 +1167,10 @@
 
 				if (fn.isDefined(callback) && fn.isCallable(callback)) {
 					var elem = ary.slice.call(this, start, end);
-					callback.call(Moduler(elem));
+					callback.call(Void0(elem));
 					return this;
 				} else {
-					return Moduler(ary.slice.call(this, start, end));
+					return Void0(ary.slice.call(this, start, end));
 				}
 			},
 
@@ -1184,7 +1189,7 @@
 				elem = this[0];
 				if (fn.isString(selector) || fn.isIterable(selector)) {
 					if (fn.isString(selector)) {
-						selector = Moduler(selector);
+						selector = Void0(selector);
 					}
 
 					fn.each(selector, function() {
@@ -1249,7 +1254,7 @@
 					return new ElementCollection();
 				}
 
-				return Moduler(this[0].children);
+				return Void0(this[0].children);
 			},
 
 			/**
@@ -1270,7 +1275,7 @@
 							this.removeAttr(attr);
 						} else {
 							fn.each(this, function() {
-								var newValue = (fn.isCallable(value)) ? value.call(Moduler(this).attr(attr)) : value;
+								var newValue = (fn.isCallable(value)) ? value.call(Void0(this).attr(attr)) : value;
 								if (this.setAttribute) {
 									this.setAttribute(attr, newValue);
 								} else {
@@ -1320,7 +1325,7 @@
 					if (fn.isDefined(value)) {
 						fn.each(this, function(i) {
 							var pp = propMapping[prop] || prop;
-							this[pp] = (fn.isCallable(value)) ? value.call(this, i, Moduler(this).prop(prop)) : value;
+							this[pp] = (fn.isCallable(value)) ? value.call(this, i, Void0(this).prop(prop)) : value;
 						});
 					} else {
 						if (this.length) {
@@ -1354,7 +1359,7 @@
 			text: function(value) {
 				if (fn.isDefined(value)) {
 					fn.each(this, function(i) {
-						this.innerText = (fn.isCallable(value)) ? value.call(this.innerText, i, Moduler(this).text()) : value;
+						this.innerText = (fn.isCallable(value)) ? value.call(this.innerText, i, Void0(this).text()) : value;
 					});
 					return this;
 				} else {
@@ -1378,21 +1383,21 @@
 					fn.each(this, function() {
 						var parent;
 						if (regexCheckable.test(this.type)) {
-							parent = Moduler(fn.owner(this).document.body);
+							parent = Void0(fn.owner(this).document.body);
 							parent.find('input[type=' + this.type + '][name="' + this.name + '"]').checked(false).filter(function() {
 								return value.indexOf(this.value) !== -1;
 							}).checked(true);
 						} else if (this.tagName.toLowerCase() == 'select') {
 							value = (this.type === 'select-multiple' && !fn.isIterable(value)) ? [value] : ((fn.isIterable(value)) ? value.slice(0, 1) : value);
-							Moduler(this).find('option').prop('selected', false).filter(function() {
+							Void0(this).find('option').prop('selected', false).filter(function() {
 								return value.indexOf(this.value) !== -1;
 							}).prop('selected', true);
 						} else {
-							this.value = (fn.isCallable(value)) ? value.call(this, i, Moduler(this).val()) : value;
-							Moduler(this).attr('value', value);
+							this.value = (fn.isCallable(value)) ? value.call(this, i, Void0(this).val()) : value;
+							Void0(this).attr('value', value);
 						}
 						// Trigger onChange event
-						Moduler(this).change();
+						Void0(this).change();
 					});
 					return this;
 				} else {
@@ -1401,22 +1406,22 @@
 							parent, selector = 'input[type=' + elem.type + '][name="' + elem.name + '"]:checked',
 							result;
 						if (regexCheckable.test(elem.type)) {
-							parent = Moduler(fn.owner(this).document.body);
+							parent = Void0(fn.owner(this).document.body);
 							return parent.find(selector).prop('value');
 						} else if (elem.tagName.toLowerCase() === 'select') {
 							if (elem.type === 'select-multiple') {
 								result = [];
-								Moduler(elem).find('option:checked').each(function() {
+								Void0(elem).find('option:checked').each(function() {
 									result.push(this.value);
 								});
 								return result;
 							} else {
-								return Moduler(elem).find('option:checked').prop('value');
+								return Void0(elem).find('option:checked').prop('value');
 							}
 						} else if (regexSubmitName.test(elem.tagName)) {
 							return elem.value;
 						} else {
-							return Moduler(elem).prop('value');
+							return Void0(elem).prop('value');
 						}
 					}
 					return null;
@@ -1478,7 +1483,7 @@
 			 */
 			hide: function() {
 				fn.each(this, function(i, elem) {
-					elem = Moduler(elem);
+					elem = Void0(elem);
 					elem.css('display', function(i, value) {
 						if (value !== 'none') {
 							this._defaultdisplay = elem.css('display');
@@ -1496,7 +1501,7 @@
 			 */
 			show: function() {
 				fn.each(this, function(i, elem) {
-					elem = Moduler(elem);
+					elem = Void0(elem);
 					elem.css('display', function(i, value) {
 						if (value === 'none') {
 							return (this.defaultDisplay || 'block');
@@ -1515,7 +1520,7 @@
 			rectbox: function() {
 				var rect,
 						rectbox = {},
-						winElem = Moduler(win),
+						winElem = Void0(win),
 						zone = {
 							width: winElem.width(),
 							height: winElem.height()
@@ -1570,12 +1575,12 @@
 				if (this.length) {
 					var elem = this[0];
 					while (!!(elem = elem.parentNode)) {
-						if (!selector || Moduler(elem).is(selector)) {
-							return Moduler(elem);
+						if (!selector || Void0(elem).is(selector)) {
+							return Void0(elem);
 						}
 					}
 				}
-				return Moduler();
+				return Void0();
 			},
 
 			/**
@@ -1627,9 +1632,9 @@
 
 				if (this.length) {
 					elem = this[0]
-					formset = (elem.nodeName.toLowerCase() === 'form' && elem.elements) ? elem.elements : Moduler(elem).find('*');
+					formset = (elem.nodeName.toLowerCase() === 'form' && elem.elements) ? elem.elements : Void0(elem).find('*');
 
-					Moduler(formset).filter(function() {
+					Void0(formset).filter(function() {
 						return (regexSubmitName.test(this.tagName) && !regexSubmitType.test(this.type) && !this.disabled && (!regexCheckable.test(this.type)) || this.checked);
 					}).each(function(i, elem) {
 						if (FormData) {
@@ -1665,7 +1670,7 @@
 					}
 
 					if (fn.isDOMElement(value)) {
-						value = Moduler(value).rectbox()[direction] + this[name]() - this.rectbox()[direction];
+						value = Void0(value).rectbox()[direction] + this[name]() - this.rectbox()[direction];
 						if (value < 0) {
 							value = 0;
 						}
@@ -1674,7 +1679,7 @@
 					}
 
 					fn.each(this, function(i, elem) {
-						var newValue = (fn.isCallable(value)) ? value.call(elem, i, Moduler(this)[name]()) : value;
+						var newValue = (fn.isCallable(value)) ? value.call(elem, i, Void0(this)[name]()) : value;
 
 						if (fn.isWindow(elem)) {
 							elem[xyOffset] = newValue;
@@ -1711,7 +1716,7 @@
 				}
 
 				fn.each(this, function(i, element) {
-					var elem = Moduler(element),
+					var elem = Void0(element),
 							i = 0;
 
 					elem.attr('draggable', true);
@@ -1744,7 +1749,7 @@
 				}
 
 				fn.each(this, function() {
-					var elem = Moduler(this),
+					var elem = Void0(this),
 							i = 0;
 
 					fn.each({
@@ -1811,12 +1816,12 @@
 
 							if (hasStyle) {
 								var diff = [];
-								cubicBezier = new Moduler.CubicBezier(0, 0, 1, 1);
+								cubicBezier = new Void0.CubicBezier(0, 0, 1, 1);
 								if (fn.isString(easing)) {
-									if (easing.substring(0, 4) === 'ease' && Moduler.CubicBezier[easing]) {
-										cubicBezier = Moduler.CubicBezier[easing]();
+									if (easing.substring(0, 4) === 'ease' && Void0.CubicBezier[easing]) {
+										cubicBezier = Void0.CubicBezier[easing]();
 									}
-								} else if (easing instanceof Moduler.CubicBezier) {
+								} else if (easing instanceof Void0.CubicBezier) {
 									cubicBezier = easing;
 								}
 
@@ -1825,7 +1830,7 @@
 										style = style.toLowerCase();
 										var matches,
 												previousValue,
-												mElem = Moduler(elem),
+												mElem = Void0(elem),
 												org = mElem.css(style);
 
 										// Length value
@@ -1838,13 +1843,13 @@
 												} else if (matches[2] === 'rem') {
 													value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
 												} else if (matches[2] === 'vh') {
-													value = fn.pxConvert(Moduler(window).height(), value);
+													value = fn.pxConvert(Void0(window).height(), value);
 												} else if (matches[2] === 'vw') {
-													value = fn.pxConvert(Moduler(window).width(), value);
+													value = fn.pxConvert(Void0(window).width(), value);
 												} else if (matches[2] === 'vmin') {
-													value = fn.pxConvert(Math.min(Moduler(window).width(), Moduler(window).height()), value);
+													value = fn.pxConvert(Math.min(Void0(window).width(), Void0(window).height()), value);
 												} else if (matches[2] === 'vmax') {
-													value = fn.pxConvert(Math.max(Moduler(window).width(), Moduler(window).height()), value);
+													value = fn.pxConvert(Math.max(Void0(window).width(), Void0(window).height()), value);
 												} else if (matches[2] === '%') {
 													// Get Computed Style value
 													previousValue = mElem.css(style);
@@ -1867,7 +1872,7 @@
 									});
 								});
 
-								promise = new Moduler.Promise(function(resolve, reject) {
+								promise = new Void0.Promise(function(resolve, reject) {
 									var start;
 
 									function raf(timestamp) {
@@ -1878,7 +1883,7 @@
 										var t = (timestamp - start) / duration;
 										if (t < 1) {
 											fn.each(diff, function(i, object) {
-												Moduler(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
+												Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
 											});
 											requestFrame(raf);
 										} else {
@@ -1895,7 +1900,7 @@
 					}
 				}
 
-				return new Moduler.Promise(function (resolve, reject) {});
+				return new Void0.Promise(function (resolve, reject) {});
 			};
 		})();
 
@@ -1927,27 +1932,27 @@
 					var element = this[0];
 					if (element) {
 						while (!!(element = siblingElement(element, name))) {
-							if (!fn.isDefined(selector) || Moduler(element).is(selector)) {
-								return Moduler(element);
+							if (!fn.isDefined(selector) || Void0(element).is(selector)) {
+								return Void0(element);
 							}
 						}
 					}
-					return Moduler();
+					return Void0();
 				};
 
 				defaultPrototype[name.substring(0, 4) + 'All'] = function(selector, until) {
 					var element = this[0], domList = [];
 					if (element) {
 						while (!!(element = siblingElement(element, name))) {
-							if (fn.isDefined(until) && Moduler(element).is(until)) {
+							if (fn.isDefined(until) && Void0(element).is(until)) {
 								break;
 							}
-							if (!fn.isDefined(selector) || Moduler(element).is(selector)) {
+							if (!fn.isDefined(selector) || Void0(element).is(selector)) {
 								domList.push(element);
 							}
 						}
 					}
-					return Moduler(domList);
+					return Void0(domList);
 				};
 			});
 		})();
@@ -2094,7 +2099,7 @@
 					if (/^<.+>$/.test(object)) {
 						return buildHTML(object);
 					} else {
-						return Moduler(object);
+						return Void0(object);
 					}
 				} else if (fn.isDOMElement(object)) {
 					contents.push(object);
@@ -2186,7 +2191,7 @@
 								if (fn.isCallable(object.selector)) {
 									fireEvent = object.selector.call(e.target);
 								} else if (fn.isString(object.selector)) {
-									fireEvent = Moduler(e.target).is(object.selector);
+									fireEvent = Void0(e.target).is(object.selector);
 								}
 							}
 
@@ -2423,12 +2428,12 @@
 									);
 								} else {
 									if (type === 'outer') {
-										extra += getExtra(name, Moduler(elem).css('border-width'));
+										extra += getExtra(name, Void0(elem).css('border-width'));
 										if (margin) {
-											extra += getExtra(name, Moduler(elem).css('margin'));
+											extra += getExtra(name, Void0(elem).css('margin'));
 										}
 									}
-									return (parseFloat((!type) ? Moduler(elem).css(name) : elem[type + property] || elem['client' + property]) || 0) + extra;
+									return (parseFloat((!type) ? Void0(elem).css(name) : elem[type + property] || elem['client' + property]) || 0) + extra;
 								}
 							}
 
@@ -2438,19 +2443,19 @@
 								this.css(name, value);
 							} else {
 								fn.each(this, function(i) {
-									var elem = Moduler(this),
+									var elem = Void0(this),
 											boxsizing = elem.css('box-sizing').toLowerCase(),
 											original,
 											newValue;
 
 									if (boxsizing === 'content-box') {
-										extra += getExtra(name, Moduler(elem).css('padding'));
+										extra += getExtra(name, Void0(elem).css('padding'));
 									}
 
 									if (type === 'outer') {
-										extra += getExtra(name, Moduler(elem).css('border-width'));
+										extra += getExtra(name, Void0(elem).css('border-width'));
 										if (margin) {
-											extra += getExtra(name, Moduler(elem).css('margin'));
+											extra += getExtra(name, Void0(elem).css('margin'));
 										}
 									}
 
@@ -2536,11 +2541,11 @@
 		return source;
 	}
 
-	// [ Moduler.Promise ]
+	// [ Void0.Promise ]
 	// 		Abide by Promises/A+ Rule
 	// 		https://promisesaplus.com/
 
-	Moduler.Promise = (function() {
+	Void0.Promise = (function() {
 		/**
 		 * [Promise description]
 		 * @param			 {[type]} executor [description]
@@ -2792,7 +2797,7 @@
 		return Promise;
 	})();
 
-	Moduler.ajax = (function() {
+	Void0.ajax = (function() {
 		var ajaxSettings = {
 			cached: {},
 			default: {
@@ -2849,7 +2854,7 @@
 			}
 			url = (fn.isString(url)) ? url : ajaxSettings.default.url;
 
-			var promise = new Moduler.Promise(function(resolve, reject) {
+			var promise = new Void0.Promise(function(resolve, reject) {
 				var xmlHttp = null,
 					action = this,
 					converters = {};
@@ -3084,15 +3089,18 @@
 		return AjaxClass;
 	})();
 
+	var noConflict = (global.__) ? global.__ : null;
+	global.Void0 = Void0;
+
 	if (typeof define === 'function' && define.amd) {
 		// AMD loader
-		define('modulerjs', [], function() {
-	    return (global.mjs = Moduler);
+		define('Void0', [], function() {
+	    return Void0;
 	  });
 	} else if (typeof module === 'object' && module.exports) {
 		// CommonJS
-	  module.exports = (global.mjs = Moduler);
+	  module.exports = Void0;
 	} else {
-		global.mjs = Moduler;
+		global.__ = Void0;
 	}
 })((typeof window !== 'undefined') ? window : this);

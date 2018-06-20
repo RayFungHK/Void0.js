@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,minimum-scale=1.0,initial-scale=1.0,user-scalable=yes,maximum-scale=1.0">
-  <title>mjsJS</title>
-  <script type="text/javascript" src="../src/Moduler.js"></script>
+  <title>Void0JS</title>
+  <script type="text/javascript" src="../src/Void0.js"></script>
   <style>
   .drag {
     width: 100px;
@@ -30,13 +30,13 @@
   </div>
   <input name="unit" value="1" />
   <script>
-  console.log(mjs('body').formdata());
-  mjs('.drag').dragable({
+  console.log(__('body').formdata());
+  __('.drag').dragable({
     start: function(e) {
       //console.log('dragstart', e);
     }
   });
-  mjs('.dropzone').dropable({
+  __('.dropzone').dropable({
     drop: function(e) {
       console.log('drop', e.draggedItem);
     }
