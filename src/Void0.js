@@ -80,18 +80,18 @@
 	// Void0 Function
 	fn = {
 		/**
-		 * [description]
-		 * @param	{object} object [description]
-		 * @return {boolean}				[description]
+		 * Check to see if an object is defined
+		 * @param	{object} object The object that will be checked to see if it's defined.
+		 * @return {boolean}
 		 */
 		isDefined: function(object) {
 			return (typeof object != 'undefined');
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is a native function
+		 * @param	{object} object The object that will be checked to see if it's a native function.
+		 * @return {boolean}
 		 */
 		isNative: function(object) {
 			var type = typeof object;
@@ -99,27 +99,27 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is a callable function
+		 * @param	{object} object The object that will be checked to see if it's a callable function.
+		 * @return {boolean}
 		 */
 		isCallable: function(object) {
 			return (typeof object == 'function');
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is an object
+		 * @param	{object} object The object that will be checked to see if it's an object.
+		 * @return {boolean}
 		 */
 		isObject: function(object) {
 			return typeof object === 'object';
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is empty
+		 * @param	{object} object The object that will be checked to see if it's empty.
+		 * @return {boolean}
 		 */
 		isEmpty: function(object) {
 			if (fn.isObject(object)) {
@@ -134,18 +134,18 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is a boolean
+		 * @param	{object} object The object that will be checked to see if it's a boolean.
+		 * @return {boolean}
 		 */
 		isBoolean: function(object) {
 			return (typeof object === 'boolean');
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is a plain object (created using "{}" or "new Object")
+		 * @param	{object} object The object that will be checked to see if it's a plain object.
+		 * @return {boolean}
 		 */
 		isPlainObject: function(object) {
 			if (object !== null && fn.isObject(object)) {
@@ -159,9 +159,9 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is iterable (Array, NodeList or the object has native forEach or native item)
+		 * @param	{object} object The object that will be checked to see if it's iterable.
+		 * @return {boolean}
 		 */
 		isIterable: function(object) {
 			if (object) {
@@ -173,64 +173,64 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is a string
+		 * @param	{object} object The object that will be checked to see if it's a string.
+		 * @return {boolean}
 		 */
 		isString: function(object) {
 			return (typeof object === 'string');
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is a numberic
+		 * @param	{object} object The object that will be checked to see if it's a numberic.
+		 * @return {boolean}
 		 */
 		isNumber: function(object) {
 			return (typeof object === 'number' && isFinite(object));
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is an array
+		 * @param	{object} object The object that will be checked to see if it's an array.
+		 * @return {boolean}
 		 */
 		isArray: function(object) {
 			return (object && Array.isArray(object));
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object [description]
-		 * @return {[type]}				[description]
+		 * Check to see if an object is a DOM element
+		 * @param	{object} object The object that will be checked to see if it's a DOM element.
+		 * @return {boolean}
 		 */
 		isDOMElement: function(object) {
 			return object && (object.nodeType == 1 || object.nodeType == 9 || object.nodeType == 11);
 		},
 
 		/**
-		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * Check to see if an object is a window
+		 * @param	{object} object The object that will be checked to see if it's a window.
+		 * @return {boolean}
 		 */
 		isWindow: function(object) {
 			return object !== null && object === object.window;
 		},
 
 		/**
-		 * [description]
-		 * @param  {[type]} object [description]
-		 * @return {[type]}        [description]
+		 * Check to see if an object is a document element
+		 * @param	{object} object The object that will be checked to see if it's a document element.
+		 * @return {boolean}
 		 */
 		isDocument: function(object) {
 			return object !== null && object.nodeType && object.nodeType === 9;
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]}	 object	 [description]
-		 * @param	{Function} callback [description]
-		 * @return {[type]}						[description]
+		 * Iterate over an object, executing a function for each item.
+		 * @param	{object}	 object	 An object will be iterated.
+		 * @param	{Function} callback A function to execute for each item.
+		 * @return {Void0}
 		 */
 		each: function(object, callback) {
 			// Object.getPrototypeOf support IE9
@@ -268,17 +268,31 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} object			 [description]
-		 * @param	{[type]} extendObject [description]
-		 * @return {[type]}							[description]
+		 * Merge the contents of two or more objects together into the first object.
+		 * @param	{object} object			 An object that will receive the new properties if additional objects are passed in
+		 * @param	{object} extendObject An object containing additional properties to merge in.
+		 * @param	{object} objectN 			Additional objects containing properties to merge in.
+		 * @return {Void0}
 		 */
 		extend: function(object, extendObject) {
-			fn.each(extendObject, function(key, val) {
-				if (!fn.isDefined(object[key])) {
-					object[key] = fn.clone(val);
-				}
+			var args = ary.slice.call(arguments),
+					deep = args.shift();
+
+			if (fn.isBoolean(deep)) {
+				object = args.shift();
+			} else {
+				object = deep;
+				deep = false;
+			}
+
+			fn.each(args, function() {
+				fn.each(this, function(key, val) {
+					if (deep || !fn.isDefined(object[key])) {
+						object[key] = fn.clone(val);
+					}
+				});
 			});
+
 			return this;
 		},
 
@@ -985,9 +999,9 @@
 			// Usage: Void0(selector).function([...args]);
 
 			/**
-			 * [description]
-			 * @param	{Function} callback [description]
-			 * @return {[type]}						[description]
+			 * Iterate over a ElementCollection object, executing a function for each matched element.
+			 * @param	{Function} callback A function to execute for each matched element.
+			 * @return {ElementCollection}
 			 */
 			each: function(callback) {
 				fn.each(this, callback);
