@@ -412,8 +412,8 @@
 		 * or a ElementCollection object suitable for use in a URL query
 		 * string or Ajax request. In case a ElementCollection object is
 		 * passed, it should contain input elements with name/value properties.
-		 * @param	{object} data [description]
-		 * @return {[type]}			[description]
+		 * @param	{object} data An array, a plain object, or a ElementCollection object to serialize.
+		 * @return {string}
 		 */
 		param: function(data, encode) {
 			var params = [];
@@ -444,9 +444,9 @@
 		},
 
 		/**
-		 * [description]
-		 * @param	{[type]} element [description]
-		 * @return {[type]}				 [description]
+		 * Return the DOMElement's owner
+		 * @param	{DOMElement} element A DOMElement to find its owner
+		 * @return {object}
 		 */
 		owner: function(element) {
 			var ownerDoc = element.ownerDocument || doc;
@@ -456,9 +456,12 @@
 			};
 		},
 
+
 		/**
-		 * [description]
-		 * @return {[type]} [description]
+		 * Convert any common css unit in pixel
+		 * @param  {number} base  A base value
+		 * @param  {string} value A value with unit to calculate with the base value
+		 * @return {number}
 		 */
 		pxConvert: function(base, value) {
 			var base = parseFloat(base) || 0,
@@ -509,6 +512,10 @@
 			return base;
 		},
 
+		/**
+		 * Relinquish Void0's control of the __ variable.
+		 * @return {[type]} [description]
+		 */
 		noConflict: function() {
 			global.__ = noConflict;
 			return Void0;
@@ -530,11 +537,11 @@
 		}
 
 		/**
-		 * [CubicBezier description]
-		 * @param			 {[type]} p1x [description]
-		 * @param			 {[type]} p1y [description]
-		 * @param			 {[type]} p2x [description]
-		 * @param			 {[type]} p2y [description]
+		 * CubicBezier Object uses to calculate the easing effect
+		 * @param			 {float} p1x Point0 (Start Point) or a string of SVG path command
+		 * @param			 {float} p1y Point1 (Control of p0)
+		 * @param			 {float} p2x Point2 (Control of p3)
+		 * @param			 {float} p2y Point3 (End Point)
 		 * @constructor
 		 */
 		function CubicBezier(p1x, p1y, p2x, p2y) {
@@ -717,10 +724,10 @@
 		}
 
 		/**
-		 * [description]
-		 * @param	{[type]} value [description]
-		 * @param	{[type]} t		 [description]
-		 * @return {[type]}			 [description]
+		 * Calculate the value on the specified timeline.
+		 * @param	{float} value A value will be calculated
+		 * @param	{float} t		 A timeline to calculate with the value
+		 * @return {float}
 		 */
 		CubicBezier.prototype.progress = function(value, t) {
 			if (t <= 0) {
@@ -843,9 +850,9 @@
 		}
 
 		/**
-		 * [description]
-		 * @param	{[type]} query [description]
-		 * @return {[type]}			 [description]
+		 * Takes a well-formed URL Query string and returns the resulting JavaScript value.
+		 * @param	{string} query [description]
+		 * @return {object}			 [description]
 		 */
 		fn.parseQuery = function(query) {
 			var params = {};
@@ -945,6 +952,11 @@
 			};
 		}
 
+		/**
+		 * Specify a function to execute when the DOM is fully loaded.
+		 * @param  {Function} callback A function to exceute when the DOM is fully loaded
+		 * @return {Void0}
+		 */
 		fn.ready = function(callback) {
 			if (fn.isCallable(callback)) {
 				if (domReady) {
@@ -956,6 +968,11 @@
 			return this;
 		};
 
+		/**
+		 * Holds or releases the execution of Void0's ready event.
+		 * @param  {boolean} enable Indicates whether the ready hold is being requested or released
+		 * @return {Void0}
+		 */
 		fn.holdReady = function(enable) {
 			if (enable) {
 				onHold = true;
@@ -972,8 +989,8 @@
 	// ElementCollection
 	var ElementCollection = (function() {
 		/**
-		 * [ElementCollection description]
-		 * @param			 {[type]} elements [description]
+		 * A set of matched elements with a number of function
+		 * @param			 {object} elements A string of selector, iterable object, DOMElement or callable function
 		 * @constructor
 		 */
 		function ElementCollection(elements) {
@@ -1006,7 +1023,8 @@
 			// Usage: Void0(selector).function([...args]);
 
 			/**
-			 * Iterate over a ElementCollection object, executing a function for each matched element.
+			 * Iterate over a ElementCollection object, executing a function
+			 * for each matched element.
 			 * @param	{Function} callback A function to execute for each matched element.
 			 * @return {ElementCollection}
 			 */
@@ -1016,10 +1034,12 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} css	 [description]
-			 * @param	{[type]} value [description]
-			 * @return {[type]}			 [description]
+			 * Get the value of a computed style property for the first element
+			 * in the set of matched elements or set one or more CSS properties
+			 * for every matched element.
+			 * @param	{string} css	 A CSS property or An array of one or more CSS properties.
+			 * @param	{object} value A value to set for the property.
+			 * @return {ElementCollection}
 			 */
 			css: function(css, value) {
 				var elem,
@@ -1064,9 +1084,9 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} css [description]
-			 * @return {[type]}		 [description]
+			 * Reset the specified style for every matched element
+			 * @param	{string} css A CSS property
+			 * @return {ElementCollection}
 			 */
 			removeCss: function(css) {
 				if (fn.isString(css)) {
@@ -1087,9 +1107,9 @@
 			},
 
 			/**
-			 * [description]
-			 * @param	{[type]} classname [description]
-			 * @return {[type]}					 [description]
+			 * Determine whether any of the matched elements are assigned the given class.
+			 * @param	{string} classname The class name to search for.
+			 * @return {ElementCollection}					 [description]
 			 */
 			hasClass: function(classname) {
 				if (this.length) {
@@ -1102,7 +1122,9 @@
 			},
 
 			/**
-			 * [description]
+			 * Add or remove one or more classes from each element in the
+			 * set of matched elements, depending on either the class’s
+			 * presence or the value of the state argument.
 			 * @param	{[type]} classname	 [description]
 			 * @param	{[type]} addorremove [description]
 			 * @return {[type]}						 [description]
@@ -1110,14 +1132,16 @@
 			toggleClass: function(classname, addorremove) {
 				fn.each(this, function(i, elem) {
 					classname = (fn.isCallable(classname)) ? classname.call(this.className, i, this.className) : classname;
-					if ((fn.isDefined(addorremove) && addorremove) || (!fn.isDefined(addorremove) && !Void0(elem).hasClass(classname))) {
-						Void0(elem).addClass(classname);
-					} else {
-						Void0(elem).removeClass(classname);
-					}
-					if (!elem.className) {
-						elem.removeAttribute('class');
-					}
+					fn.each(classname.split(' '), function() {
+						if ((fn.isDefined(addorremove) && addorremove) || (!fn.isDefined(addorremove) && !Void0(elem).hasClass(this))) {
+							Void0(elem).addClass(this);
+						} else {
+							Void0(elem).removeClass(this);
+						}
+						if (!elem.className) {
+							elem.removeAttribute('class');
+						}
+					});
 				});
 				return this;
 			},
