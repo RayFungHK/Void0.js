@@ -508,8 +508,6 @@
 				default:
 					return base;
 			}
-
-			return base;
 		},
 
 		/**
@@ -2036,52 +2034,43 @@
 			});
 		})();
 
-		(function() {
+		fn.each(['', 'Array'], function() {
+			var name = this;
 			/**
 			 * [description]
 			 * @return {[type]} [description]
 			 */
-			fn.each(['', 'Array'], function() {
-				var name = this;
-				defaultPrototype['serialize' + name] = function() {
-					var result = [],
-						elem,
-						formData;
+			defaultPrototype['serialize' + name] = function() {
+				var result = [],
+					elem,
+					formData;
 
-					if (this.length) {
-						elem = this[0];
-						if (elem && elem.tagName.toLowerCase() === 'form') {
-							formData = new FormData(elem);
-							fn.each(formData, function(key, value) {
-								if (name) {
-									result.push({
-										name: encodeURIComponent(key),
-										value: encodeURIComponent(value)
-									});
-								} else {
-									result.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
-								}
-							});
-						}
+				if (this.length) {
+					elem = this[0];
+					if (elem && elem.tagName.toLowerCase() === 'form') {
+						formData = new FormData(elem);
+						fn.each(formData, function(key, value) {
+							if (name) {
+								result.push({
+									name: encodeURIComponent(key),
+									value: encodeURIComponent(value)
+								});
+							} else {
+								result.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+							}
+						});
 					}
-					return (name) ? result : result.join('&');
 				}
-			});
-		})();
+				return (name) ? result : result.join('&');
+			}
+		});
 
-		/**
-		 * [description]
-		 * @param	{[type]} key	[description]
-		 * @param	{[type]} name [description]
-		 * @return {[type]}			[description]
-		 */
-		/**
-		 * [description]
-		 * @param	{[type]} key	[description]
-		 * @param	{[type]} name [description]
-		 * @return {[type]}			[description]
-		 */
 		fn.each(['add', 'remove'], function(key, name) {
+			/**
+			 * [description]
+			 * @param  {[type]} classname [description]
+			 * @return {[type]}           [description]
+			 */
 			defaultPrototype[name + 'Class'] = function(classname) {
 				if (classname) {
 					fn.each(this, function(i) {
@@ -2841,7 +2830,7 @@
 					while (microtask = mircotaskList.shift()) {
 						var forkPromise = microtask.promise;
 
-						if (!promise.state in microtask.events) {
+						if (!(promise.state in microtask.events)) {
 							microtask.transition(promise.state, promise.value);
 						} else {
 							var object = microtask.events[promise.state];
