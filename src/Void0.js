@@ -732,7 +732,6 @@
 				return 0;
 			} else if (t >= 1) {
 				if (this.controls.length) {
-					console.log(this.controls[this.controls.length - 1].p3.y);
 					return this.controls[this.controls.length - 1].p3.y * value;
 				} else {
 					return 0;
@@ -1958,15 +1957,16 @@
 											start = timestamp;
 										}
 
-										var t = (timestamp - start) / duration;
-										if (t < 1) {
-											fn.each(diff, function(i, object) {
-												Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
-											});
-											requestFrame(raf);
-										} else {
-											self.css(csschanges);
+										var t = Math.min((timestamp - start) / duration, 1);
+
+										fn.each(diff, function(i, object) {
+											Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
+										});
+
+										if (t === 1) {
 											resolve(self);
+										} else {
+											requestFrame(raf);
 										}
 									}
 
