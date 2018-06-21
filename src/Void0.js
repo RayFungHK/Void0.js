@@ -732,6 +732,7 @@
 				return 0;
 			} else if (t >= 1) {
 				if (this.controls.length) {
+					console.log(this.controls[this.controls.length - 1].p3.y);
 					return this.controls[this.controls.length - 1].p3.y * value;
 				} else {
 					return 0;
@@ -1651,7 +1652,6 @@
 			parent: function(selector) {
 				if (this.length) {
 					var elem = this[0];
-						console.log(this);
 					while (!!(elem = elem.parentNode)) {
 						if (!selector || Void0(elem).is(selector)) {
 							return Void0(elem);
