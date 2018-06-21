@@ -1651,6 +1651,7 @@
 			parent: function(selector) {
 				if (this.length) {
 					var elem = this[0];
+						console.log(this);
 					while (!!(elem = elem.parentNode)) {
 						if (!selector || Void0(elem).is(selector)) {
 							return Void0(elem);
@@ -2244,7 +2245,8 @@
 				},
 
 				trigger: function(e) {
-					var namespaces = [];
+					var namespaces = [],
+							self = this;
 					if (e.namespaces && fn.isString(e.namespaces)) {
 						namespaces = selector.split('.');
 					} else if (fn.isIterable(e.namespaces)) {
@@ -2264,13 +2266,13 @@
 							}
 
 							if (fireEvent) {
-								object.callback.call(this.element, e);
+								object.callback.call(self.element, e);
 							}
 						} else {
 							if (namespaces.every(function(value) {
 								return object.namespaces.includes(value);
 							})) {
-								object.callback.call(this.element, e);
+								object.callback.call(self.element, e);
 							}
 						}
 					});
