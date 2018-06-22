@@ -164,9 +164,9 @@
 		 * @return {boolean}
 		 */
 		isIterable: function(object) {
-			if (object) {
+			if (fn.isObject(object)) {
 				// Object.getPrototypeOf support IE9
-				var prototype = (object.__proto__ || Object.getPrototypeOf(object));
+				var prototype = (fn.isDefined(object.__proto__)) ? object.__proto__ : Object.getPrototypeOf(object);
 				return (toString.call(object) === '[object Array]' || fn.isNative(prototype.forEach) || fn.isNative(prototype.item));
 			}
 			return false;
@@ -716,7 +716,7 @@
 					t = x;
 
 			if (!p.samples) {
-				p.samples = (fn.isCallable(Float32Array)) ? new Float32Array(11) : new Array(11);
+				p.samples = (typeof Float32Array !== 'undefined' && fn.isCallable(Float32Array)) ? new Float32Array(11) : new Array(11);
 				for (i = 0; i < 11; ++i) {
 					p.samples[i] = calcBezier(i * 0.1, p, 'x');
 				}
@@ -1881,7 +1881,7 @@
 		})();
 
 		(function() {
-			var requestFrame = requestAnimationFrame || function(callback) {
+			var requestFrame = (fn.isDefined(win.requestAnimationFrame)) ? requestAnimationFrame : function(callback) {
 				setTimeout(function() {
 					callback.call(this, Date.now());
 				}, 1000 / 60);
@@ -1908,101 +1908,99 @@
 							duration = 1000;
 						}
 
-						if (supportsTransitions) {
-							var csschanges = {},
-									hasStyle = false;
+						var csschanges = {},
+								hasStyle = false;
 
-							fn.each(css, function(style, value) {
-								var styleName = fn.camelCase(style);
-								if (styleName in supportstyles) {
-									csschanges[styleName] = value;
-									hasStyle = true;
+						fn.each(css, function(style, value) {
+							var styleName = fn.camelCase(style);
+							if (styleName in supportstyles) {
+								csschanges[styleName] = value;
+								hasStyle = true;
+							}
+						});
+
+						if (hasStyle) {
+							var diff = [];
+							cubicBezier = new Void0.CubicBezier(0, 0, 1, 1);
+							if (fn.isString(easing)) {
+								if (easing.substring(0, 4) === 'ease' && Void0.CubicBezier[easing]) {
+									cubicBezier = Void0.CubicBezier[easing]();
 								}
+							} else if (easing instanceof Void0.CubicBezier) {
+								cubicBezier = easing;
+							}
+
+							fn.each(this, function(i, elem) {
+								fn.each(csschanges, function(style, value) {
+									style = style.toLowerCase();
+									var matches,
+											previousValue,
+											mElem = Void0(elem),
+											org = mElem.css(style);
+
+									// Length value
+									if ((matches = regexUnit.exec(org)) !== null) {
+										org = parseFloat(matches[1]) || 0;
+
+										if ((matches = regexUnit.exec(value)) !== null && !matches[3]) {
+											if (matches[2] === 'em') {
+												value = fn.pxConvert((style === 'font-size') ? mElem.parent().css('font-size') : mElem.css('font-size'), value);
+											} else if (matches[2] === 'rem') {
+												value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
+											} else if (matches[2] === 'vh') {
+												value = fn.pxConvert(Void0(window).height(), value);
+											} else if (matches[2] === 'vw') {
+												value = fn.pxConvert(Void0(window).width(), value);
+											} else if (matches[2] === 'vmin') {
+												value = fn.pxConvert(Math.min(Void0(window).width(), Void0(window).height()), value);
+											} else if (matches[2] === 'vmax') {
+												value = fn.pxConvert(Math.max(Void0(window).width(), Void0(window).height()), value);
+											} else if (matches[2] === '%') {
+												// Get Computed Style value
+												previousValue = mElem.css(style);
+												value = mElem.css(style, value).css(style);
+												mElem.css(style, previousValue);
+											} else {
+												value = fn.pxConvert(org, value);
+											}
+										} else {
+											value = parseFloat(value) || 0;
+										}
+
+										diff.push({
+											elem: elem,
+											style: style,
+											org: org,
+											value: value - org
+										});
+									}
+								});
 							});
 
-							if (hasStyle) {
-								var diff = [];
-								cubicBezier = new Void0.CubicBezier(0, 0, 1, 1);
-								if (fn.isString(easing)) {
-									if (easing.substring(0, 4) === 'ease' && Void0.CubicBezier[easing]) {
-										cubicBezier = Void0.CubicBezier[easing]();
+							promise = new Void0.Promise(function(resolve, reject) {
+								var start;
+
+								function raf(timestamp) {
+									if (!start) {
+										start = timestamp;
 									}
-								} else if (easing instanceof Void0.CubicBezier) {
-									cubicBezier = easing;
+
+									var t = Math.min((timestamp - start) / duration, 1);
+
+									fn.each(diff, function(i, object) {
+										Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
+									});
+
+									if (t === 1) {
+										resolve(self);
+									} else {
+										requestFrame(raf);
+									}
 								}
 
-								fn.each(this, function(i, elem) {
-									fn.each(csschanges, function(style, value) {
-										style = style.toLowerCase();
-										var matches,
-												previousValue,
-												mElem = Void0(elem),
-												org = mElem.css(style);
-
-										// Length value
-										if ((matches = regexUnit.exec(org)) !== null) {
-											org = parseFloat(matches[1]) || 0;
-
-											if ((matches = regexUnit.exec(value)) !== null && !matches[3]) {
-												if (matches[2] === 'em') {
-													value = fn.pxConvert((style === 'font-size') ? mElem.parent().css('font-size') : mElem.css('font-size'), value);
-												} else if (matches[2] === 'rem') {
-													value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
-												} else if (matches[2] === 'vh') {
-													value = fn.pxConvert(Void0(window).height(), value);
-												} else if (matches[2] === 'vw') {
-													value = fn.pxConvert(Void0(window).width(), value);
-												} else if (matches[2] === 'vmin') {
-													value = fn.pxConvert(Math.min(Void0(window).width(), Void0(window).height()), value);
-												} else if (matches[2] === 'vmax') {
-													value = fn.pxConvert(Math.max(Void0(window).width(), Void0(window).height()), value);
-												} else if (matches[2] === '%') {
-													// Get Computed Style value
-													previousValue = mElem.css(style);
-													value = mElem.css(style, value).css(style);
-													mElem.css(style, previousValue);
-												} else {
-													value = fn.pxConvert(org, value);
-												}
-											} else {
-												value = parseFloat(value) || 0;
-											}
-
-											diff.push({
-												elem: elem,
-												style: style,
-												org: org,
-												value: value - org
-											});
-										}
-									});
-								});
-
-								promise = new Void0.Promise(function(resolve, reject) {
-									var start;
-
-									function raf(timestamp) {
-										if (!start) {
-											start = timestamp;
-										}
-
-										var t = Math.min((timestamp - start) / duration, 1);
-
-										fn.each(diff, function(i, object) {
-											Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
-										});
-
-										if (t === 1) {
-											resolve(self);
-										} else {
-											requestFrame(raf);
-										}
-									}
-
-									requestFrame(raf);
-								});
-								return promise;
-							}
+								requestFrame(raf);
+							});
+							return promise;
 						}
 					}
 				}
@@ -2162,7 +2160,7 @@
 						return this;
 					} else {
 						var value,
-							dataset;
+								dataset;
 						if (fn.isString(name) && this.length) {
 							name = name.trim();
 							if (name) {
