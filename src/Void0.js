@@ -60,13 +60,13 @@
 	 * @constructor
 	 * return ElementCollection
 	 */
-	function Void0(object) {
+	function Void0(object, context) {
 		if (fn.isCallable(object)) {
 			fn.ready(object);
 			return this;
 		} else {
 			var collection = new ElementCollection();
-			collectElements(object, doc, collection);
+			collectElements(object, context, collection);
 
 			// Clear _added flag
 			fn.each(collection, function() {
@@ -508,6 +508,41 @@
 				default:
 					return base;
 			}
+		},
+
+		template: function(path) {
+			var promise;
+
+			if (fn.isString(path)) {
+				path = path.trim();
+
+				// If the path do not contain file extension, default .html
+				if (!/\..+$/.test(path)) {
+					path += '.html';
+				}
+
+				promise = Void0.ajax({
+					url: path,
+					dataType: 'html'
+				}).then(function(data) {
+					var elem = Void0(data);
+					if (elem.length) {
+						// If browser supports DocumentFragment
+						if ('content' in elem[0]) {
+							return Void0(elem[0].content.childNodes);
+						} else {
+							if (elem[0].tagName.toLowerCase() === 'template') {
+								return Void0(elem[0].childNodes);
+							}
+						}
+					}
+					return Void0();
+				});
+			} else {
+				promise = new Void0.Promise(function() {});
+			}
+
+			return promise;
 		},
 
 		/**
@@ -1227,7 +1262,8 @@
 			 */
 			is: function(selector) {
 				var found = false,
-					elem;
+						elem;
+
 				if (!this.length) {
 					return false;
 				}
@@ -1244,6 +1280,7 @@
 							return false;
 						}
 					});
+
 					return found;
 				} else if (fn.isCallable(selector)) {
 					return selector.call(elem);
@@ -1621,18 +1658,10 @@
 					rectbox.pageX = rectbox.x + win.pageXOffset;
 					rectbox.pageY = rectbox.y + win.pageYOffset;
 
-					rectbox.exposeXRatio = (zone.width - rectbox.x) / (zone.width + rectbox.width);
-					if (rectbox.exposeXRatio > 1) {
-						rectbox.exposeXRatio = 1;
-					} else if (rectbox.exposeXRatio < 0) {
-						rectbox.exposeXRatio = 0;
-					}
-					rectbox.exposeYRatio = (zone.height - rectbox.y) / (zone.height + rectbox.height);
-					if (rectbox.exposeYRatio > 1) {
-						rectbox.exposeYRatio = 1;
-					} else if (rectbox.exposeYRatio < 0) {
-						rectbox.exposeYRatio = 0;
-					}
+					rectbox.exposeXRatio = Math.max(0, Math.min(1, (zone.width - rectbox.x) / (zone.width + rectbox.width)));
+
+					rectbox.exposeYRatio = Math.max(0, Math.min(1, (zone.height - rectbox.y) / (zone.height + rectbox.height)));
+
 
 					if (rectbox.y < zone.height && rectbox.y + rectbox.height > 0 && rectbox.x < zone.width && rectbox.x + rectbox.width > 0) {
 						rectbox.appearOnScreen = true;
@@ -2569,7 +2598,14 @@
 		container.innerHTML = html;
 		if (fn.isIterable(source)) {
 			fn.each(container.children, function() {
-				source.push(this);
+				if (this instanceof HTMLUnknownElement) {
+					// Let IE can identify the unknown HTML tag
+					var element = doc.createElement(this.tagName);
+					element.innerHTML = this.innerHTML;
+					source.push(element);
+				} else {
+					source.push(this);
+				}
 			});
 			container.innerHTML = '';
 			return source;
@@ -2586,7 +2622,7 @@
 			selector = selector.trim();
 			if (selector) {
 				// If selector is a DOM string
-				if (/^<.+>$/.test(selector)) {
+				if (/^<.+>$/m.test(selector)) {
 					buildHTML(selector, source);
 				} else {
 					fn.each(context.querySelectorAll(selector), function() {
