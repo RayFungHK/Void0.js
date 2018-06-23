@@ -510,7 +510,7 @@
 			}
 		},
 
-		template: function(path) {
+		template: function(path, noCache) {
 			var promise;
 
 			if (fn.isString(path)) {
@@ -523,7 +523,8 @@
 
 				promise = Void0.ajax({
 					url: path,
-					dataType: 'html'
+					dataType: 'html',
+					cache: !noCache
 				}).then(function(data) {
 					var elem = Void0(data);
 					if (elem.length) {
@@ -1971,7 +1972,17 @@
 											elem: elem,
 											style: style,
 											org: org,
-											value: value - org
+											value: value - org,
+											hasUnit: true
+										});
+									} else {
+										value = parseInt(value) || 0;
+										diff.push({
+											elem: elem,
+											style: style,
+											org: org,
+											value: value - org,
+											hasUnit: false
 										});
 									}
 								});
@@ -1988,7 +1999,7 @@
 									var t = Math.min((timestamp - start) / duration, 1);
 
 									fn.each(diff, function(i, object) {
-										Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + 'px');
+										Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + (object.hasUnit ? 'px' : ''));
 									});
 
 									if (t === 1) {
@@ -2205,11 +2216,11 @@
 				return contents;
 			}
 
-			function insertElement(pair, appendToElement, sibling) {
+			function insertElement(pair, prependElement, sibling) {
 				var target = pair[0],
-					source = pair[1],
-					contents = [],
-					length = (target.length) ? target.length - 1 : 0;
+						source = pair[1],
+						contents = [],
+						length = (target.length) ? target.length - 1 : 0;
 
 				target = createList(target);
 				source = createList(source);
@@ -2221,15 +2232,21 @@
 						}
 
 						el = (el.nodeType === 1) ? el : fn.owner(el).document.body;
+
+						// If append(), appendTo() and after(), reverse the source lise
+						if (!prependElement) {
+							source = ary.reverse.call(source);
+						}
+
 						fn.each(source, function(j, element) {
 							var elementNode = (length === i) ? element : element.cloneNode(true),
-								targetNode = (!sibling) ? el : ((el.nodeType === 1) ? el.parentNode : null);
+									targetNode = (!sibling) ? el : ((el.nodeType === 1) ? el.parentNode : null);
 
 							if (targetNode) {
-								if ((targetNode.lastchild === el && appendToElement && sibling) || (appendToElement && !sibling)) {
+								if ((targetNode.lastchild === el && prependElement && sibling) || (prependElement && !sibling)) {
 									targetNode.appendChild(elementNode);
 								} else {
-									targetNode.insertBefore(elementNode, (sibling) ? (!appendToElement ? el.nextSibling : el) : el.childNodes[0]);
+									targetNode.insertBefore(elementNode, (sibling) ? (!prependElement ? el.nextSibling : el) : el.childNodes[0]);
 								}
 							}
 						});
