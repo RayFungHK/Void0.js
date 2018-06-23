@@ -510,6 +510,12 @@
 			}
 		},
 
+		/**
+		 * [description]
+		 * @param  {[type]} path    [description]
+		 * @param  {[type]} noCache [description]
+		 * @return {[type]}         [description]
+		 */
 		template: function(path, noCache) {
 			var promise;
 
@@ -544,6 +550,28 @@
 			}
 
 			return promise;
+		},
+
+		/**
+		 * [description]
+		 * @param  {[type]} path [description]
+		 * @return {[type]}      [description]
+		 */
+		load: function(path) {
+			if (!fn.isString(path)) {
+				path = '';
+			}
+			path = path.trim();
+
+			if (!path) {
+				return new Void0.Promise(function() {});
+			}
+
+			return Void0.ajax({
+				url: path,
+				dataType: 'text',
+				cache: false
+			});
 		},
 
 		/**
@@ -2166,7 +2194,11 @@
 							if (!fn.isDefined(this.dataset)) {
 								createDataSet(this);
 							}
-							this.dataset[name] = (clone) ? fn.clone(object) : object;
+							if (object === null) {
+								delete this.dataset[name];
+							} else {
+								this.dataset[name] = (clone) ? fn.clone(object) : object;
+							}
 						});
 						return this;
 					} else {
