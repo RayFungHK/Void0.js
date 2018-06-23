@@ -1,59 +1,60 @@
 (function(global) {
 	"use strict";
 	var fn = {},
-		configuration = {
-			plugin: './plugin/'
-		},
-		allType = '*/'.concat('*'),
+			configuration = {
+				plugin: './plugin/'
+			},
+			allType = '*/'.concat('*'),
 
-		// Shortern Function
-		ary = Array.prototype,
-		toString = Object.prototype.toString,
-		win = window,
-		doc = document,
-		head = doc.getElementsByTagName('head')[0],
-		context = {},
-		slice = ary.slice,
+			// Shortern Function
+			ary = Array.prototype,
+			toString = Object.prototype.toString,
+			win = window,
+			doc = document,
+			head = doc.getElementsByTagName('head')[0],
+			context = {},
+			slice = ary.slice,
 
-		container = doc.createElement('div'),
-		supportstyles = container.style,
-		supportsTransitions = 'transition' in supportstyles || 'WebkitTransition' in supportstyles || 'MozTransition' in supportstyles || 'msTransition' in supportstyles || 'OTransition' in supportstyles,
-		iframe = doc.createElement('iframe'),
+			container = doc.createElement('div'),
+			supportstyles = container.style,
+			supportsTransitions = 'transition' in supportstyles || 'WebkitTransition' in supportstyles || 'MozTransition' in supportstyles || 'msTransition' in supportstyles || 'OTransition' in supportstyles,
+			iframe = doc.createElement('iframe'),
 
-		// Mapping List
-		propMapping = {
-			'for': 'htmlFor',
-			'class': 'className'
-		},
-		attrMapping = {
-			'accesskey': 'accessKey',
-			'class': 'className',
-			'colspan': 'colSpan',
-			'for': 'htmlFor',
-			'maxlength': 'maxLength',
-			'readonly': 'readOnly',
-			'rowspan': 'rowSpan',
-			'tabindex': 'tabIndex',
-			'valign': 'vAlign',
-			'cellspacing': 'cellSpacing',
-			'cellpadding': 'cellPadding'
-		},
-		wrapMap = {
-			'thead': [1, '<table>', '</table>'],
-			'col': [2, '<table><colgroup>', '</colgroup></table>'],
-			'tr': [2, '<table><tbody>', '</tbody></table>'],
-			'td': [3, '<table><tbody><tr>', '</tr></tbody></table>']
-		},
+			// Mapping List
+			propMapping = {
+				'for': 'htmlFor',
+				'class': 'className'
+			},
+			attrMapping = {
+				'accesskey': 'accessKey',
+				'class': 'className',
+				'colspan': 'colSpan',
+				'for': 'htmlFor',
+				'maxlength': 'maxLength',
+				'readonly': 'readOnly',
+				'rowspan': 'rowSpan',
+				'tabindex': 'tabIndex',
+				'valign': 'vAlign',
+				'cellspacing': 'cellSpacing',
+				'cellpadding': 'cellPadding'
+			},
+			wrapMap = {
+				'thead': [1, '<table>', '</table>'],
+				'col': [2, '<table><colgroup>', '</colgroup></table>'],
+				'tr': [2, '<table><tbody>', '</tbody></table>'],
+				'td': [3, '<table><tbody><tr>', '</tr></tbody></table>']
+			},
 
-		// Regex
-		regexConstructor = /^\[object .+?Constructor\]$/,
-		regexNative = new RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\/\\]/g, '\\$&').replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'),
-		regexUnit = /^\s*(?:(\d+(?:\.\d+)?)\s*(em|%|px|cm|mm|in|pt|pc|rem|vh|vw|vmin|vmax)|(auto))\s*$/,
-		regexCheckable = /^(checkbox|radio)$/i,
-		regexSubmitType = /^(submit|button|image|reset|file)$/i,
-		regexSubmitName = /^(input|select|textarea|keygen)$/i,
-		regexConstructor = /^\[object .+?Constructor\]$/,
-		regexSideUnit = /(\d+(?:\.\d+)?\w*)(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?/;
+			// Regex
+			regexConstructor = /^\[object .+?Constructor\]$/,
+			regexNative = new RegExp('^' + String(toString).replace(/[.*+?^${}()|[\]\/\\]/g, '\\$&').replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'),
+			regexUnit = /^\s*(?:(\d+(?:\.\d+)?)\s*(em|%|px|cm|mm|in|pt|pc|rem|vh|vw|vmin|vmax)|(auto))\s*$/,
+			regexCheckable = /^(checkbox|radio)$/i,
+			regexSubmitType = /^(submit|button|image|reset|file)$/i,
+			regexSubmitName = /^(input|select|textarea|keygen)$/i,
+			regexConstructor = /^\[object .+?Constructor\]$/,
+			regexSideUnit = /(\d+(?:\.\d+)?\w*)(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?(?:\s+(\d+(?:\.\d+)?\w*))?/,
+			regexHasValueSet = /(margin|padding)(?:-?(left|top|right|bottom))/i;
 
 	/**
 	 * Void0
@@ -1916,6 +1917,35 @@
 				}, 1000 / 60);
 			};
 
+			function animationChain(collection, executor) {
+				if (!collection.animatequeue) {
+					collection.animatequeue = new Void0.Promise(executor);
+				} else {
+					collection.animatequeue = collection.animatequeue.then(function() {
+						return new Void0.Promise(executor);
+					});
+				}
+			}
+
+			defaultPrototype.animatequeue = null;
+
+			/**
+			 * [description]
+			 * @return {[type]} [description]
+			 */
+			defaultPrototype.delay = function(duration) {
+				var self = this,
+						duration = Math.max(0, parseInt(duration) || 0);
+
+				animationChain(this, function(resolve, reject) {
+					setTimeout(function() {
+						resolve(true);
+					}, duration)
+				});
+
+				return this;
+			};
+
 			/**
 			 * [description]
 			 * @param	{[type]} cssObj	 [description]
@@ -1926,9 +1956,7 @@
 			 */
 			defaultPrototype.animate = function(css, duration, easing, onCompleted) {
 				var self = this,
-						promise,
-						cubicBezier,
-						processList = [];
+						cubicBezier;
 
 				if (this.length) {
 					if (fn.isPlainObject(css)) {
@@ -1937,20 +1965,19 @@
 							duration = 1000;
 						}
 
-						var csschanges = {},
-								hasStyle = false;
+						var csschanges = {};
 
 						fn.each(css, function(style, value) {
 							var styleName = fn.camelCase(style);
 							if (styleName in supportstyles) {
-								csschanges[styleName] = value;
-								hasStyle = true;
+								csschanges[style] = value;
 							}
 						});
 
-						if (hasStyle) {
+						if (!fn.isEmpty(csschanges)) {
 							var diff = [];
 							cubicBezier = new Void0.CubicBezier(0, 0, 1, 1);
+
 							if (fn.isString(easing)) {
 								if (easing.substring(0, 4) === 'ease' && Void0.CubicBezier[easing]) {
 									cubicBezier = Void0.CubicBezier[easing]();
@@ -1959,41 +1986,58 @@
 								cubicBezier = easing;
 							}
 
-							fn.each(this, function(i, elem) {
-								fn.each(csschanges, function(style, value) {
-									style = style.toLowerCase();
-									var matches,
-											previousValue,
-											mElem = Void0(elem),
-											org = mElem.css(style);
+							animationChain(this, function(resolve, reject) {
+								var start;
 
-									// Length value
-									if ((matches = regexUnit.exec(org)) !== null) {
-										org = parseFloat(matches[1]) || 0;
+								// Calculate the diff
+								fn.each(self, function(i, elem) {
+									fn.each(csschanges, function(style, value) {
+										var matches,
+												previousValue,
+												mElem = Void0(elem),
+												org,
+												valueset,
+												hasUnit = false;
 
-										if ((matches = regexUnit.exec(value)) !== null && !matches[3]) {
-											if (matches[2] === 'em') {
-												value = fn.pxConvert((style === 'font-size') ? mElem.parent().css('font-size') : mElem.css('font-size'), value);
-											} else if (matches[2] === 'rem') {
-												value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
-											} else if (matches[2] === 'vh') {
-												value = fn.pxConvert(Void0(window).height(), value);
-											} else if (matches[2] === 'vw') {
-												value = fn.pxConvert(Void0(window).width(), value);
-											} else if (matches[2] === 'vmin') {
-												value = fn.pxConvert(Math.min(Void0(window).width(), Void0(window).height()), value);
-											} else if (matches[2] === 'vmax') {
-												value = fn.pxConvert(Math.max(Void0(window).width(), Void0(window).height()), value);
-											} else if (matches[2] === '%') {
-												// Get Computed Style value
-												previousValue = mElem.css(style);
-												value = mElem.css(style, value).css(style);
-												mElem.css(style, previousValue);
-											} else {
-												value = fn.pxConvert(org, value);
-											}
+										if ((matches = regexHasValueSet.exec(style)) !== null) {
+											valueset = getValueset(mElem.css(matches[1]));
+											org = valueset[matches[2].toLowerCase()];
 										} else {
-											value = parseFloat(value) || 0;
+											org = mElem.css(style);
+										}
+
+										// Length value
+										if ((matches = regexUnit.exec(org)) !== null) {
+											org = parseFloat(matches[1]) || 0;
+
+											if ((matches = regexUnit.exec(value)) !== null && !matches[3]) {
+												if (matches[2] === 'em') {
+													value = fn.pxConvert((style === 'font-size') ? mElem.parent().css('font-size') : mElem.css('font-size'), value);
+												} else if (matches[2] === 'rem') {
+													value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
+												} else if (matches[2] === 'vh') {
+													value = fn.pxConvert(Void0(window).height(), value);
+												} else if (matches[2] === 'vw') {
+													value = fn.pxConvert(Void0(window).width(), value);
+												} else if (matches[2] === 'vmin') {
+													value = fn.pxConvert(Math.min(Void0(window).width(), Void0(window).height()), value);
+												} else if (matches[2] === 'vmax') {
+													value = fn.pxConvert(Math.max(Void0(window).width(), Void0(window).height()), value);
+												} else if (matches[2] === '%') {
+													// Get Computed Style value
+													previousValue = mElem.css(style);
+													value = mElem.css(style, value).css(style);
+													mElem.css(style, previousValue);
+												} else {
+													value = fn.pxConvert(org, value);
+												}
+											} else {
+												value = parseFloat(value) || 0;
+											}
+											hasUnit = true;
+										} else {
+											value = parseInt(value) || 0;
+											org = parseInt(org) || 0;
 										}
 
 										diff.push({
@@ -2001,23 +2045,10 @@
 											style: style,
 											org: org,
 											value: value - org,
-											hasUnit: true
+											hasUnit: hasUnit
 										});
-									} else {
-										value = parseInt(value) || 0;
-										diff.push({
-											elem: elem,
-											style: style,
-											org: org,
-											value: value - org,
-											hasUnit: false
-										});
-									}
+									});
 								});
-							});
-
-							promise = new Void0.Promise(function(resolve, reject) {
-								var start;
 
 								function raf(timestamp) {
 									if (!start) {
@@ -2025,13 +2056,15 @@
 									}
 
 									var t = Math.min((timestamp - start) / duration, 1);
-
 									fn.each(diff, function(i, object) {
 										Void0(object.elem).css(object.style, (object.org + cubicBezier.progress(object.value, t)) + (object.hasUnit ? 'px' : ''));
 									});
 
 									if (t === 1) {
-										resolve(self);
+										if (fn.isCallable(onCompleted)) {
+											onCompleted.call(self);
+										}
+										resolve(true);
 									} else {
 										requestFrame(raf);
 									}
@@ -2039,12 +2072,11 @@
 
 								requestFrame(raf);
 							});
-							return promise;
 						}
 					}
 				}
 
-				return new Void0.Promise(function (resolve, reject) {});
+				return this;
 			};
 		})();
 
@@ -2527,17 +2559,26 @@
 			});
 		})();
 
+		function getValueset(value) {
+			value = value.split(' ');
+			return {
+				top: value[0],
+				right: value[1] || value[0],
+				bottom: value[2] || value[0],
+				left: value[3] || value[1] || value[0]
+			};
+		}
+
 		(function() {
 			function getExtra(type, value) {
 				var extra = 0,
-						matches;
+						valueset;
 
-				if ((matches = regexSideUnit.exec(value)) !== null) {
-					if (type === 'height') {
-						extra += (parseFloat(matches[1]) || 0) + (parseFloat(matches[3] || matches[1]) || 0);
-					} else {
-						extra += (parseFloat(matches[2] || matches[1]) || 0) + (parseFloat(matches[4] || matches[2] || matches[1]) || 0);
-					}
+				valueset = getValueset(value);
+				if (type === 'height') {
+					extra += (parseFloat(valueset.top) || 0) + (parseFloat(valueset.bottom) || 0);
+				} else {
+					extra += (parseFloat(valueset.left) || 0) + (parseFloat(valueset.right) || 0);
 				}
 
 				return extra;
@@ -2741,14 +2782,14 @@
 		 */
 		Promise.prototype.then = function(onFulfilled, onRejected) {
 			var promise = this,
-				task = {
-					events: {},
-					promise: undefined,
-					transition: function(state, value) {
-						this.promise.state = state;
-						this.promise.value = value;
-					}
-				};
+					task = {
+						events: {},
+						promise: undefined,
+						transition: function(state, value) {
+							this.promise.state = state;
+							this.promise.value = value;
+						}
+					};
 
 			task.events.fulFilled = onFulfilled;
 			task.events.rejected = onRejected;
