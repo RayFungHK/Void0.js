@@ -2203,9 +2203,14 @@
 		(function() {
 			function createDataSet(element) {
 				element.dataset = {};
-				fn.each(element.attributes, function() {
-					if (this.indexOf('data-') === 0) {
-						element.dataset[this.substr(5)] = element[this];
+				fn.each(element.attributes, function(name, value) {
+					if (fn.isObject(this)) {
+						name = this.name;
+						value = this.value;
+					}
+
+					if (name.indexOf('data-') === 0) {
+						element.dataset[name.substr(5)] = value;
 					}
 				});
 			}
@@ -2449,6 +2454,18 @@
 			function createEvent(element, event) {
 				var eventObj;
 				if (CustomEvent) {
+					if (fn.isObject(win.CustomEvent)) {
+						function CustomEvent (event, params) {
+							params = params || {bubbles: false, cancelable: false, detail: undefined};
+							var evt = doc.createEvent('CustomEvent');
+							evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+							return evt;
+						}
+
+						CustomEvent.prototype = win.Event.prototype;
+						win.CustomEvent = CustomEvent;
+					}
+
 					eventObj = new CustomEvent(event, {
 						bubbles: true,
 						cancelable: true
@@ -3185,6 +3202,10 @@
 						xmlHttp.overrideMimeType(settings.mimeType);
 					}
 
+					if (settings.datatype) {
+						xmlHttp.responseType = settings.datatype;
+					}
+
 					xmlHttp.onreadystatechange = function() {
 						if (xmlHttp.readyState != 4) return;
 
@@ -3197,12 +3218,12 @@
 
 						if (xmlHttp.status == 200) {
 							var header = xmlHttp.getResponseHeader('Content-Type'),
-								delimited = header.split(';')[0].split('/'),
-								contentType = delimited[0],
-								outputFormat = delimited[1],
-								response = xmlHttp.response,
-								convertName = contentType + ' ' + ((settings.dataType) ? settings.dataType : outputFormat),
-								modifiedCheck = {};
+									delimited = header.split(';')[0].split('/'),
+									contentType = delimited[0],
+									outputFormat = delimited[1],
+									response = xmlHttp.response || xmlHttp.responseText,
+									convertName = contentType + ' ' + ((settings.dataType) ? settings.dataType : outputFormat),
+									modifiedCheck = {};
 
 							// settings.ifModified
 							if (settings.ifModified) {
@@ -3227,7 +3248,7 @@
 								response = settings.afterDataReceive.call(response, response);
 							}
 
-							if (converters[convertName]) {
+							if (fn.isString(response) && converters[convertName]) {
 								if (converters[convertName] !== true) {
 									response = converters[convertName](response);
 								}
