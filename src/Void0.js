@@ -273,10 +273,11 @@
 		 * @param	{object} object			 An object that will receive the new properties if additional objects are passed in
 		 * @param	{object} extendObject An object containing additional properties to merge in.
 		 * @param	{object} objectN 			Additional objects containing properties to merge in.
-		 * @return {Void0}
+		 * @return {object}
 		 */
 		extend: function(object, extendObject) {
 			var args = ary.slice.call(arguments),
+					reserved = {},
 					deep = args.shift();
 
 			if (fn.isBoolean(deep)) {
@@ -286,15 +287,29 @@
 				deep = false;
 			}
 
-			fn.each(args, function() {
-				fn.each(this, function(key, val) {
-					if (deep || !fn.isDefined(object[key])) {
+			if (args.length > 0) {
+				fn.each(args, function() {
+					fn.each(this, function(key, val) {
+						if (deep || reserved[key] || !fn.isDefined(object[key])) {
+							if (!reserved[key]) {
+								reserved[key] = true;
+							}
+							object[key] = fn.clone(val);
+						}
+					});
+				});
+			} else if (fn.isObject(object) && !args.length) {
+				extendObject = object;
+				object = ElementCollection.prototype;
+				fn.each(extendObject, function(key, val) {
+					if (!fn.isDefined(object[key])) {
 						object[key] = fn.clone(val);
 					}
 				});
-			});
+				object = this;
+			}
 
-			return this;
+			return object;
 		},
 
 		/**
@@ -1072,8 +1087,7 @@
 			}
 		}
 
-		var defaultPrototype,
-			reservedFunc = {};
+		var defaultPrototype;
 
 		defaultPrototype = {
 			push: ary.push,
@@ -2141,8 +2155,8 @@
 			 */
 			defaultPrototype['serialize' + name] = function() {
 				var result = [],
-					elem,
-					formData;
+						elem,
+						formData;
 
 				if (this.length) {
 					elem = this[0];
@@ -2680,16 +2694,6 @@
 		})();
 
 		fn.extend(ElementCollection.prototype, defaultPrototype);
-
-		ElementCollection.hook = function(name, func) {
-			if (fn.isCallable(func)) {
-				if (fn.isDefined(defaultPrototype[name])) {
-					reservedFunc[name] = true;
-				}
-				ElementCollection.prototype[name] = func;
-			}
-			return this;
-		};
 
 		ElementCollection.reset = function() {
 			ElementCollection.prototype = defaultPrototype;
