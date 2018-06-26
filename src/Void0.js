@@ -317,7 +317,7 @@
 		 * @param	{object} object An object that will be cloned
 		 * @return {object}
 		 */
-		clone: function(object) {
+		clone: function(object, shallow) {
 			if (!object) {
 				return object;
 			}
@@ -348,7 +348,7 @@
 					} else {
 						result = {};
 						for (var property in object) {
-							result[property] = fn.clone(object[property]);
+							result[property] = (shallow) ? object[property] : fn.clone(object[property]);
 						}
 					}
 				} else {
@@ -414,7 +414,7 @@
 		},
 
 		/**
-		 * Return how one DOM position compares to another DOM position.
+		 * Compares the position of the current node against another node in any other document.
 		 * @param	{DOMElement} a A compare DOMElement
 		 * @param	{DOMElement} b Another DOMElement
 		 * @return {object}
@@ -431,21 +431,27 @@
 		 * @param	{object} data An array, a plain object, or a ElementCollection object to serialize.
 		 * @return {string}
 		 */
-		param: function(data, encode) {
-			var params = [];
+		param: function(data) {
+			var params = [],
+					datagroup = {};
 
 			function buildQueryString(key, value) {
 				value = (fn.isCallable(value)) ? value() : value;
-				params.push(key + '=' + (value || ''));
+				params.push(key + '=' + encodeURIComponent(value || ''));
 			}
 
 			if (data instanceof ElementCollection) {
-				data = data.formdata();
+				data.each(function() {
+					if (this.tagName.toLowerCase() === 'select' || regexCheckable.test(this.type) || (regexSubmitName.test(this.tagName) && !regexSubmitType.test(this.type))) {
+						datagroup[this.name] = Void0(this).val();
+					}
+				});
+				data = datagroup;
 			}
 
 			(function deeprun(data, prefix) {
 				fn.each(data, function(key, val) {
-					key = (!fn.isArray(data)) ? key : '';
+					key = (!fn.isArray(data) || fn.isPlainObject(val)) ? encodeURIComponent(key) : '';
 					var param = (prefix) ? prefix + '[' + key + ']' : key;
 
 					if (fn.isArray(val) || fn.isPlainObject(val)) {
@@ -1560,8 +1566,10 @@
 				} else {
 					if (this.length) {
 						var elem = this[0],
-							parent, selector = 'input[type=' + elem.type + '][name="' + elem.name + '"]:checked',
-							result;
+								parent,
+								selector = 'input[type=' + elem.type + '][name="' + elem.name + '"]:checked',
+								result;
+
 						if (regexCheckable.test(elem.type)) {
 							parent = Void0(fn.owner(this).document.body);
 							return parent.find(selector).prop('value');
@@ -1575,7 +1583,7 @@
 							} else {
 								return Void0(elem).find('option:checked').prop('value');
 							}
-						} else if (regexSubmitName.test(elem.tagName)) {
+						} else if (regexSubmitName.test(elem.tagName) && !regexSubmitType.test(elem.type)) {
 							return elem.value;
 						} else {
 							return Void0(elem).prop('value');
@@ -2263,12 +2271,10 @@
 								}
 								value = this[0].dataset[name];
 
-								if (fn.isString(value) && /\^{.*\}$/.test(value)) {
-									try {
-										return JSON.parse(value);
-									} catch (e) {
-										return value;
-									}
+								try {
+									return JSON.parse(value);
+								} catch (e) {
+									return value;
 								}
 								return value;
 							}
