@@ -485,7 +485,7 @@
 		 * @param  {string} value A value with unit to calculate with the base value
 		 * @return {number}
 		 */
-		pxConvert: function(base, value) {
+		pxConvert: function(value, base) {
 			var base = parseFloat(base) || 0,
 					matches = regexUnit.exec(value),
 					relativeValue = parseFloat(matches[1]) || 0;
@@ -507,19 +507,19 @@
 					return base * (relativeValue / 100);
 					break;
 				case 'cm':
-					return base * (relativeValue * 37.8);
+					return relativeValue * 37.8;
 					break;
 				case 'mm':
-					return base * (relativeValue * 3.78);
+					return relativeValue * 3.78;
 					break;
 				case 'in':
-					return base * (relativeValue * 96);
+					return relativeValue * 96;
 					break;
 				case 'pt':
-					return base * (relativeValue * 96 / 72);
+					return relativeValue * 96 / 72;
 					break;
 				case 'pc':
-					return base * (relativeValue * 96 / 12);
+					return relativeValue * 96 / 12;
 					break;
 				case 'vw':
 				case 'vh':
@@ -545,7 +545,7 @@
 				path = path.trim();
 
 				// If the path do not contain file extension, default .html
-				if (!/\..+$/.test(path)) {
+				if (!/(\.[\w\d]+)$/.test(path)) {
 					path += '.html';
 				}
 
@@ -592,7 +592,7 @@
 			return Void0.ajax({
 				url: path,
 				dataType: 'text',
-				cache: false
+				cache: true
 			});
 		},
 
@@ -2034,24 +2034,24 @@
 
 											if ((matches = regexUnit.exec(value)) !== null && !matches[3]) {
 												if (matches[2] === 'em') {
-													value = fn.pxConvert((style === 'font-size') ? mElem.parent().css('font-size') : mElem.css('font-size'), value);
+													value = fn.pxConvert(value, (style === 'font-size') ? mElem.parent().css('font-size') : mElem.css('font-size'));
 												} else if (matches[2] === 'rem') {
-													value = fn.pxConvert(mElem.parent('html').css('font-size'), value);
+													value = fn.pxConvert(value, mElem.parent('html').css('font-size'));
 												} else if (matches[2] === 'vh') {
-													value = fn.pxConvert(Void0(window).height(), value);
+													value = fn.pxConvert(value, Void0(window).height());
 												} else if (matches[2] === 'vw') {
-													value = fn.pxConvert(Void0(window).width(), value);
+													value = fn.pxConvert(value, Void0(window).width());
 												} else if (matches[2] === 'vmin') {
-													value = fn.pxConvert(Math.min(Void0(window).width(), Void0(window).height()), value);
+													value = fn.pxConvert(value, Math.min(Void0(window).width(), Void0(window).height()));
 												} else if (matches[2] === 'vmax') {
-													value = fn.pxConvert(Math.max(Void0(window).width(), Void0(window).height()), value);
+													value = fn.pxConvert(value, Math.max(Void0(window).width(), Void0(window).height()));
 												} else if (matches[2] === '%') {
 													// Get Computed Style value
 													previousValue = mElem.css(style);
 													value = mElem.css(style, value).css(style);
 													mElem.css(style, previousValue);
 												} else {
-													value = fn.pxConvert(org, value);
+													value = fn.pxConvert(value);
 												}
 											} else {
 												value = parseFloat(value) || 0;
@@ -2292,11 +2292,7 @@
 				if (fn.isIterable(object) && object.length) {
 					return object;
 				} else if (fn.isString(object)) {
-					if (/^<.+>$/.test(object)) {
-						return buildHTML(object);
-					} else {
-						return Void0(object);
-					}
+					return Void0(object);
 				} else if (fn.isDOMElement(object)) {
 					contents.push(object);
 					return contents;
