@@ -2774,6 +2774,8 @@
 			this.state = 'pending';
 			this.value = undefined;
 			this.tasks = [];
+			this.oncatch = null;
+			this.pendingCatch = [];
 
 			if (fn.isCallable(executor)) {
 				try {
@@ -2791,6 +2793,7 @@
 				} catch (e) {
 					// Throw Error
 					promiseContext.rejected(promise, e);
+					catchError(promise, e);
 				}
 			} else {
 				throw new TypeError('Promise resolver ' + executor + ' is not a function');
@@ -2830,6 +2833,19 @@
 			notify(this);
 
 			return task.promise;
+		};
+
+		/**
+		 * [description]
+		 * @param  {Function} callback [description]
+		 * @return {[type]}            [description]
+		 */
+		Promise.prototype.catch = function(callback) {
+			if (callback && fn.isCallable(callback)) {
+				this.oncatch = callback;
+				catchError(this);
+			}
+			return this;
 		};
 
 		/**
@@ -2912,9 +2928,9 @@
 
 			// If x is an object or function
 			// https://promisesaplus.com/#point-53
-			if (fn.isObject(mixed) && 'then' in mixed) {
+			if (mixed && fn.isObject(mixed) && 'then' in mixed) {
 				var then,
-					called = false;
+						called = false;
 
 				try {
 					// Let then be x.then
@@ -2995,6 +3011,7 @@
 									// promise2 must be rejected with e as the reason.
 									// https://promisesaplus.com/#point-42
 									promiseContext.rejected(forkPromise, e);
+									catchError(forkPromise, e);
 								}
 							} else {
 								// If onFulfilled is not a function and promise1 is fulFilled,
@@ -3008,6 +3025,20 @@
 						}
 					}
 				});
+			}
+		}
+
+		function catchError(promise, errorText) {
+			if (fn.isCallable(promise.oncatch)) {
+				while (promise.pendingCatch.length) {
+					var error = promise.pendingCatch.shift();
+					promise.oncatch(error);
+				}
+				if (errorText) {
+					promise.oncatch(errorText);
+				}
+			} else {
+				promise.pendingCatch.push(errorText);
 			}
 		}
 
@@ -3031,7 +3062,9 @@
 				username: null,
 				password: null,
 				cache: null,
+				statusCode: {},
 				headers: {},
+				scriptCharset: 'UTF-8',
 
 				accepts: {
 					'*': allType,
@@ -3060,7 +3093,6 @@
 			if (!fn.isPlainObject(settings)) {
 				settings = ajaxSettings.default;
 			} else {
-
 				fn.each(ajaxSettings.default, function(key, val) {
 					if (key != 'headers' && key != 'accepts' && key != 'converters') {
 						if (!fn.isDefined(settings[key])) {
@@ -3073,35 +3105,51 @@
 
 			var promise = new Void0.Promise(function(resolve, reject) {
 				var xmlHttp = null,
-					action = this,
-					converters = {};
+						action = this,
+						converters = {};
 
 				// settings.beforeSend
+				if (!fn.isPlainObject(settings.headers)) {
+					settings.headers = {};
+				}
+
 				if (fn.isCallable(settings.beforeSend)) {
 					settings.beforeSend.call(xmlHttp, xmlHttp);
 				}
 
+				if (!settings.headers['X-Requested-With']) {
+					settings.headers['X-Requested-With'] = 'XMLHttpRequest';
+				}
+
 				// settings.crossDomain
-				if (settings.crossDomain || settings.dataType === 'script') {
-					if (settings.dataType === 'script') {
+				if (settings.crossDomain || settings.dataType === 'script' || settings.dataType === 'jsonp') {
+					if (settings.dataType === 'jsonp') {
 						// settings.jsonp
 						var jsonpFunc,
-							jsonpCallback;
+								jsonString;
 
-						if (settings.jsonp && fn.isString(settings.jsonp)) {
-							jsonpFunc = settings.jsonp;
-						} else {
+						if (settings.jsonp) {
+							jsonpFunc = Math.random().toString(36).replace(/\d/g, '').slice(2, 7);
+
 							if (!fn.isDefined(win._ajaxCallback)) {
 								win._ajaxCallback = {};
 							}
-							jsonpFunc = Math.random().toString(36).replace(/\d/g, '').slice(2, 7);
 
-							win._ajaxCallback[jsonpFunc] = function(data) {
-								if (fn.isCallable(settings.jsonpCallback)) {
-									settings.jsonpCallback(data);
+							if (fn.isString(settings.jsonp)) {
+								jsonString = settings.jsonp.trim();
+								if (fn.isCallable(win[jsonString])) {
+									win._ajaxCallback[jsonpFunc] = function(data) {
+										win[jsonString](data);
+									};
+								} else {
+									reject(jsonString + ' is not a function or not exists');
+									return;
 								}
-								resolve(data);
-							};
+							} else if (fn.isCallable(settings.jsonp)) {
+								win._ajaxCallback[jsonpFunc] = function(data) {
+									settings.jsonp(data);
+								};
+							}
 
 							jsonpFunc = 'window._ajaxCallback.' + jsonpFunc;
 						}
@@ -3109,6 +3157,10 @@
 					}
 
 					var script = doc.createElement('script');
+
+					// settings.scriptCharset
+					script.charset = settings.scriptCharset;
+
 					// settings.data
 					if (settings.data) {
 						settings.data = fn.param(settings.data);
@@ -3123,14 +3175,20 @@
 					script.src = url;
 					doc.getElementsByTagName('head')[0].appendChild(script);
 					script.onload = function() {
-						onCompleted();
+						resolve(script);
+						onCompleted(settings);
 					};
 
 					script.onerror = function(e) {
 						reject(e);
 					};
 				} else {
+					// settings.withCredentials
 					xmlHttp = new XMLHttpRequest();
+					if (settings.withCredentials) {
+						xmlHttp.withCredentials = true;
+					}
+
 					// settings.method
 					if (!settings.method) {
 						settings.method = settings.method || settings.type || 'GET';
@@ -3148,13 +3206,14 @@
 					}
 
 					// settings.cache
-					if (!settings.cache && (!settings.dataType || settings.dataType == 'jsonp' || settings.dataType == 'script')) {
+					if (!settings.cache) {
 						url = url + ((/\?/).test(url) ? '&' : '?') + (new Date()).getTime();
 					}
 
 					if (!fn.isDefined(settings.async)) {
 						settings.async = true;
 					}
+
 					xmlHttp.open(settings.method, url, settings.async, settings.username, settings.password);
 
 					// settings.timeout
@@ -3239,11 +3298,12 @@
 									if (ajaxSettings.cached[url].lastModified != modifiedCheck.lastModified || (modifiedCheck.etag && ajaxSettings.cached[url].eTag == modifiedCheck.etag)) {
 										ajaxSettings.cached[url] = modifiedCheck;
 									} else {
-										reject({
+										var xmlStatus = {
 											status: 304,
-											text: 'Not modified'
-										});
-										onCompleted();
+											statusText: 'Not modified'
+										};
+										reject(xmlStatus);
+										onCompleted(xmlStatus);
 										return;
 									}
 								}
@@ -3256,18 +3316,24 @@
 
 							if (fn.isString(response) && converters[convertName]) {
 								if (converters[convertName] !== true) {
-									response = converters[convertName](response);
+									try {
+										response = converters[convertName](response);
+									}
+									catch(e) {
+										reject(e);
+										return;
+									}
 								}
 							}
 
 							resolve(response);
-							onCompleted();
+							onCompleted(settings, xmlHttp);
 						} else {
 							reject({
 								status: xmlHttp.status,
 								text: xmlHttp.statusText
 							});
-							onCompleted();
+							onCompleted(settings, xmlHttp);
 						}
 					};
 
@@ -3275,20 +3341,27 @@
 				}
 			});
 
-			function onCompleted() {
-				// settings.complete
-				if (!fn.isIterable(settings.complete)) {
-					settings.complete = [settings.complete];
-				}
+			return promise;
+		}
 
-				fn.each(settings.complete, function() {
-					if (fn.isCallable(this)) {
-						this.call(this, xmlHttp, xmlHttp.statusText);
-					}
-				});
+		function onCompleted(settings, xmlHttp) {
+			// settings.complete
+			if (!fn.isIterable(settings.complete)) {
+				settings.complete = [settings.complete];
 			}
 
-			return promise;
+			if (xmlHttp) {
+				// settings.statusCode
+				if (fn.isPlainObject(settings.statusCode) && fn.isCallable(settings.statusCode[xmlHttp.status])) {
+					settings.statusCode[xmlHttp.status](xmlHttp);
+				}
+			}
+
+			fn.each(settings.complete, function() {
+				if (fn.isCallable(this)) {
+					this.call(this, xmlHttp, xmlHttp.statusText);
+				}
+			});
 		}
 
 		AjaxClass.config = function(param, value) {
