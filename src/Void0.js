@@ -705,13 +705,11 @@
 
 					// Scale all x, y by 1:1
 					fn.each(self.controls, function(i) {
-						var rate;
 						self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
 						self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
 
-						rate = (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
-						self.controls[i].p1.x = self.controls[i].p0.x + rate;
-						self.controls[i].p2.x = self.controls[i].p0.x + rate;
+						self.controls[i].p1.x = self.controls[i].p0.x + (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+						self.controls[i].p2.x = self.controls[i].p0.x + (self.controls[i].p2.x * (self.controls[i].p3.x - self.controls[i].p0.x));
 
 						self.controls[i].p0.y /= ratioY;
 						self.controls[i].p1.y /= ratioY;
@@ -843,6 +841,31 @@
 				return calcBezier(getTForX(t, ctls[step], this), ctls[step], 'y', this) * value;
 			}
 			return 0;
+		};
+
+		CubicBezier.prototype.stepping = function() {
+			var steps = ary.splice.call(arguments),
+					total = 0;
+			if (this.controls.length - 1 !== steps.length) {
+				throw new Error('You should provide ' + (this.controls.length - 1) + ' steps to reset the cubic bezier timeline.');
+			} else if (this.controls.length > 2) {
+				fn.each(steps, function() {
+					total += (parseFloat(this) || 0);
+					if (total > 1) {
+						return false;
+					}
+				});
+				if (total !== 1) {
+					throw new Error('The sum of all timelines must equal 1.');
+				} else {
+					fn.each(this.controls, function(i, ctrl) {
+						if (i) {
+							//this.controls[i].
+						}
+					});
+				}
+			}
+			return this;
 		};
 
 		fn.each({

@@ -3,44 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,minimum-scale=1.0,initial-scale=1.0,user-scalable=yes,maximum-scale=1.0">
-  <title>Void0JS</title>
+  <title>__JS</title>
   <script type="text/javascript" src="../src/Void0.js"></script>
-  <style>
-  .drag {
-    width: 100px;
-    height: 100px;
-    line-height: 100px;
-    text-align: center;
-    background: #e5e5e5;
-  }
-  .dropzone {
-    height: 200px;
-    background: #111;
-  }
-  </style>
   </head>
 </head>
 <body>
-  <div class="drag">1</div>
-  <div class="drag">2</div>
-  <div class="drag">3</div>
-  <div class="drag">4</div>
-  <div class="dropzone">
-
-  </div>
-  <input name="unit" value="1" />
+  <div id="test" data-test="hello">Test</div>
+  <div id="draw" style="position: relative; height: 100px; width: 100px;"></div>
   <script>
-  console.log(__('body').formdata());
-  __('.drag').dragable({
-    start: function(e) {
-      //console.log('dragstart', e);
+    __('#test').css({
+      'background-color': '#000',
+      'color': '#fff',
+      'padding': '1em',
+      'height': '100px',
+      'width': '100px',
+      'position': 'absolute',
+      'border-radius': '50%',
+      'top': '0',
+      'left': '100px',
+      'text-align': 'center',
+      'line-height': '100px',
+      'border': '#f00 10px solid'
+    }).toggleClass('toggle').html('<span>test</span> <span>HTML</span>');
+
+    setTimeout(function() {
+      __('div').show()
+    }, 1000)
+
+    var t2 = 0;
+    var t1 = 0;
+    var tb = __.CubicBezier.easeOutSine();
+    var fps = 1000 / 60;
+    function run2() {
+      var v = tb.progress(200, t2);
+      __('#test').css({
+        left: (v) + 'px'
+      });
+
+      ct = setTimeout(run2, fps);
+      if (t2 > 1) {
+        clearTimeout(ct);
+      } else {
+        t2 += fps / 1000;
+      }
+      x = t2 * 100;
     }
-  });
-  __('.dropzone').dropable({
-    drop: function(e) {
-      console.log('drop', e.draggedItem);
+
+    var cb = __.CubicBezier.easeOutBounce();
+    function run() {
+      var v = cb.progress(200, t1);
+      __('#test').css({
+        top: (v) + 'px'
+      });
+
+      tt = setTimeout(run, fps);
+      if (t1 > 1) {
+        clearTimeout(tt);
+      } else {
+        t1 += fps / 1000;
+      }
+      x = t1 * 100;
+
+      __('#draw').append(__('<i></i>').css({
+        display: 'block',
+        width: '1px',
+        height: '1px',
+        position: 'absolute',
+        left: x + 'px',
+        'background-color': '#000',
+        bottom: (v / 2) + 'px'
+      }));
     }
-  });
+    var tt = setTimeout(run, fps);
+    var ct = setTimeout(run2, fps);
   </script>
 </body>
 </html>
