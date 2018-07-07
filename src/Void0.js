@@ -606,10 +606,278 @@
 		}
 	};
 
-	fn.CubicBezier = (function() {
-		var regexMoveTo = /M(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)/,
-				regexCurve = /(c|s)(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?)(?:,(-?\d+(?:\.\d+)?)([,-]?\d+(?:\.\d+)?))?/g;
+	fn.SVG = (function() {
+		var lengthreq = {
+					0: 'zZ',
+					1: 'vhVH',
+					2: 'mlMLtT',
+					4: 'qsQS',
+					6: 'cC'
+				};
 
+		function getAbsoultePoint(endPoint, lastPoint, isRelative) {
+			if (isRelative) {
+				return {
+					x: lastPoint.p3x + endPoint.p3x,
+					y: lastPoint.p3y + endPoint.p3y,
+				}
+			} else {
+				return endPoint;
+			}
+		}
+
+		function SVG() {
+
+		}
+
+		SVG.Path = function(command) {
+			var self = this;
+
+			this.commands = [];
+
+			if (fn.isString(command)) {
+				command = command.replace(/\s*([mlvhqczst])\s*/ig, '\n$1 ').replace(/(?:,|(-)| +)/g, ' $1').trim().split('\n');
+
+				fn.each(command, function() {
+					var fragment = this.split(' '),
+							commandkey = fragment.shift(),
+							commandset = {};
+
+					if (self.commands.length === 0 && commandkey !== 'M') {
+						throw new Error('SVG Path should be started from M');
+					} else if (!lengthreq[fragment.length] || lengthreq[fragment.length].indexOf(commandkey) === -1) {
+						throw new Error('Invalid ' + commandkey + ' command');
+					} else {
+						commandset.command = commandkey;
+						commandset.points = {};
+						fn.each(fragment, function(i) {
+							var pointer = 6 - fragment.length + i - ((/[hH]/.test(commandkey)) ? 1 : 0);
+							commandset.points['p' + (Math.floor(pointer / 2) + 1) + 'xy'[pointer % 2]] = parseFloat(this) || 0;
+						});
+						if (/q/i.test(commandset.command)) {
+							commandset.points.p1x = commandset.points.p2x;
+							commandset.points.p1y = commandset.points.p2y;
+							commandset.points.p2x = 0;
+							commandset.points.p2y = 0;
+						}
+						self.commands.push(commandset);
+					}
+				});
+			}
+		};
+
+		function walkPath(svgpath, callback) {
+			var currentPoint,
+					previousCommand;
+
+			fn.each(svgpath.commands, function() {
+				if (!currentPoint && this.command === 'M') {
+					currentPoint = fn.clone(this.points);
+					previousCommand = 'M';
+				} else if (/[lvhqtzsca]/i.test(this.command) && currentPoint) {
+					previousCommand = callback.call(this, this.command === this.command.toUpperCase(), currentPoint, previousCommand);
+
+					// command maybe changed, so we need to check the command is uppercase again
+					if (this.command === this.command.toUpperCase()) {
+						fn.each(this.points, function(i) {
+							currentPoint[i] = this;
+						});
+					} else {
+						currentPoint = {
+							p1x: currentPoint.p3x + (this.points.p1x || 0),
+							p1y: currentPoint.p3y + (this.points.p1y || 0),
+							p2x: currentPoint.p3x + (this.points.p2x || 0),
+							p2y: currentPoint.p3y + (this.points.p2y || 0),
+							p3x: currentPoint.p3x + (this.points.p3x || 0),
+							p3y: currentPoint.p3y + (this.points.p3y || 0)
+						};
+					}
+				} else {
+					throw new Error('Missing command M, no start point exists');
+				}
+			});
+		}
+
+		SVG.Path.prototype.moveTo = function(x, y) {
+			var adjust,
+					movetoPoint = this.commands[0];
+
+			x = parseFloat(x) || 0;
+			y = parseFloat(y) || 0;
+
+			if (movetoPoint.command === 'M') {
+				adjust = {
+					x: x - movetoPoint.points.p3x,
+					y: y - movetoPoint.points.p3y
+				};
+				movetoPoint.points.p3x = x;
+				movetoPoint.points.p3y = y;
+
+				walkPath(this, function(isAbsolute, currentPoint, previousCommand) {
+					if (isAbsolute) {
+						var index = 0,
+								point,
+								dimen;
+
+						for (; index < 6; index++) {
+							dimen = 'xy'[index % 2];
+							point = 'p' + (Math.floor(index / 2) + 1) + dimen;
+
+							if (fn.isDefined(this.points[point])) {
+								this.points[point] = this.points[point] + adjust[dimen];
+							}
+						}
+					}
+
+					return this.command;
+				});
+			}
+
+			return this;
+		};
+
+		SVG.Path.prototype.exportAsString = function() {
+			var commandString = '';
+			fn.each(this.commands, function() {
+				var index = 0,
+						point;
+
+				commandString += this.command;
+				for (; index < 6; index++) {
+					point = 'p' + (Math.floor(index / 2) + 1) + 'xy'[index % 2];
+					if (fn.isDefined(this.points[point])) {
+						commandString += this.points[point].toFixed(2).replace(/(0+|\.0+)$/, '') + ' ';
+					}
+				}
+			});
+			return commandString.trim();
+		};
+
+		SVG.Path.prototype.convertToCurve = function() {
+			walkPath(this, function(isAbsolute, currentPoint, previousCommand) {
+				var returnCommand = this.command,
+						converted = false,
+						self = this;
+
+				if (/vhl/i.test(this.command)) {
+					this.points.p1x = (!isAbsolute) ? 0 : currentPoint.p3x;
+					this.points.p1y = (!isAbsolute) ? 0 : currentPoint.p3y;
+					this.points.p2x = this.points.p3x;
+					this.points.p2y = this.points.p3y;
+					if (this.command === 'v' || this.command === 'V') {
+						this.points.p3x = (!isAbsolute) ? 0 : currentPoint.p3x;
+						this.points.p3y = (!isAbsolute) ? this.points.p3y : this.points.p3y + currentPoint.p3y;
+					} else if (this.command === 'h' || this.command === 'H') {
+						this.points.p3x = (!isAbsolute) ? this.points.p3x : this.points.p3x + currentPoint.p3x;
+						this.points.p3y = (!isAbsolute) ? 0 : previous.p3y;
+					}
+					converted = true;
+				} else if (/[st]/i.test(this.command)) {
+					if (!/c/i.test(previousCommand) && /s/i.test(this.command)) {
+						throw new Error('Cannot convert s command beacuse there is no c command for reference.');
+					}
+					if (!/q/i.test(previousCommand) && /t/i.test(this.command)) {
+						throw new Error('Cannot convert t command beacuse there is no q command for reference.');
+					}
+					for (var i = 0; i < 4; i++) {
+						var point = 'p' + (Math.floor(i / 2) + 1) + 'xy'[i % 2],
+								refer = 'p' + (Math.floor((3 - i) / 2) + 1) + 'xy'[i % 2],
+								base = 'p3' + 'xy'[i % 2];
+
+						self.points[point] = (!isAbsolute) ? currentPoint[base] - currentPoint[refer] : currentPoint[base] + (currentPoint[base] - currentPoint[refer]);
+					}
+					converted = true;
+				} else if (this.command === 'q' || this.command === 'Q') {
+					// Convert quadratic bezier to a cubic bezier
+					var quad = {
+						x: this.points.p1x,
+						y: this.points.p1y
+					};
+
+					fn.each({
+						'p1x p1y': currentPoint,
+						'p2x p2y': this.points
+					}, function(pos, refer) {
+						fn.each(pos.split(' '), function(i) {
+							var dimen = 'xy'[i % 2],
+									point = refer['p3' + dimen];
+
+							self.points[this] = point + (quad[dimen] - point) * (2 / 3);
+						});
+					});
+					converted = true;
+				}
+
+				if (converted) {
+					this.command = (isAbsolute) ? 'C' : 'c';
+				}
+
+				return returnCommand;
+			});
+
+			return this;
+		};
+
+		SVG.Path.prototype.convertToAbsolute = function() {
+			walkPath(this, function(isAbsolute, currentPoint, previousCommand) {
+				var converted = false;
+
+				if (/[lvhqtzsca]/i.test(this.command) && currentPoint) {
+					if (/[vlstqc]/.test(this.command)) {
+						this.points.p3y += currentPoint.p3y || 0;
+					}
+					if (/[hlstqc]/.test(this.command)) {
+						this.points.p3x += currentPoint.p3x || 0;
+					}
+					if (/[stc]/.test(this.command)) {
+						this.points.p2x += currentPoint.p3x || 0;
+						this.points.p2y += currentPoint.p3y || 0;
+					}
+					if (/[qc]/.test(this.command)) {
+						this.points.p1x += currentPoint.p3x || 0;
+						this.points.p1y += currentPoint.p3y || 0;
+					}
+					this.command = this.command.toUpperCase();
+				}
+
+				return this.command;
+			});
+
+			return this;
+		};
+
+		SVG.Path.prototype.convertToRelative = function() {
+			walkPath(this, function(isAbsolute, currentPoint, previousCommand) {
+				var converted = false;
+
+				if (/[lvhqtzsca]/i.test(this.command) && currentPoint) {
+					if (/[VLSTQC]/.test(this.command)) {
+						this.points.p3y -= currentPoint.p3y || 0;
+					}
+					if (/[HLSTQC]/.test(this.command)) {
+						this.points.p3x -= currentPoint.p3x || 0;
+					}
+					if (/[STC]/.test(this.command)) {
+						this.points.p2x -= currentPoint.p3x || 0;
+						this.points.p2y -= currentPoint.p3y || 0;
+					}
+					if (/[QC]/.test(this.command)) {
+						this.points.p1x -= currentPoint.p3x || 0;
+						this.points.p1y -= currentPoint.p3y || 0;
+					}
+					this.command = this.command.toLowerCase();
+				}
+
+				return this.command;
+			});
+
+			return this;
+		};
+
+		return SVG;
+	})();
+
+	fn.CubicBezier = (function() {
 		function conv(value) {
 			if (fn.isString(value)) {
 				if (value[0] === ',') {
@@ -630,57 +898,50 @@
 		 */
 		function CubicBezier(p1x, p1y, p2x, p2y) {
 			var self = this,
-					matches,
-					startpoint,
-					pointset,
+					path,
 					initX,
 					ratioX,
 					ratioY,
-					xLength;
+					xLength,
+					startpoint;
 
 			self.lastStep = 0;
 			self.controls = [];
 
-			if (fn.isString(p1x) && p1x && p1x[0] === 'M') {
-				if ((matches = regexMoveTo.exec(p1x)) !== null) {
-					this.isCustom = true;
-					startpoint = {x: conv(matches[1]), y: 0};
+			if (fn.isString(p1x)) {
+				path = new fn.SVG.Path(p1x);
+				if (path.commands.length === 0 || path.commands[0].command !== 'M') {
+					throw new Error('Invalid SVG path');
+				}
 
-					ratioX = startpoint.x;
-					initX = ratioX;
+				path.convertToCurve().convertToRelative();
+				fn.each(path.commands, function() {
+					var xLength,
+							pointset;
 
-					while ((matches = regexCurve.exec(p1x)) !== null) {
-						if (matches.index === regexCurve.lastIndex) {
-							regexCurve.lastIndex++;
-						}
-
-						if (matches[1] === 'c' && matches[6] === null) {
+					if (this.command === 'M') {
+						startpoint = {x: this.points.p3x, y: 0};
+						ratioX = startpoint.x;
+						initX = ratioX;
+					} else {
+						if (!/c/i.test(this.command)) {
 							throw new Error('Incorrect svg path c command');
 						}
 
-						if (matches[1] === 's') {
-							if (!pointset) {
-								throw new Error('Incorrect svg path s command');
-							}
-							// Get the dx1, dy1 from last point set dx2, dy2
-							matches.splice(1, 0, pointset.p3.x - pointset.p2.x, pointset.p3.y - pointset.p2.y);
-						}
-
-						xLength = conv(matches[6]);
-
+						xLength = this.points.p3x;
 						pointset = {
 							p0: startpoint,
 							p1: {
-								x: conv(matches[2]) / xLength,
-								y: startpoint.y - conv(matches[3])
+								x: this.points.p1x / xLength,
+								y: startpoint.y - this.points.p1y
 							},
 							p2: {
-								x: conv(matches[4]) / xLength,
-								y: startpoint.y - conv(matches[5])
+								x: this.points.p2x / xLength,
+								y: startpoint.y - this.points.p2y
 							},
 							p3: {
 								x: startpoint.x + xLength,
-								y: startpoint.y - conv(matches[7])
+								y: startpoint.y - this.points.p3y
 							},
 							samples: null
 						};
@@ -690,37 +951,34 @@
 							throw new Error('Invalid cubic bezier curve');
 						}
 
-						self.controls.push(pointset);
-						startpoint = fn.clone(pointset.p3);
-
-						if (startpoint.x <= ratioX) {
+						if (pointset.p3.x <= ratioX) {
 							throw new Error('Current start point x less than previous point x.');
 						} else {
-							ratioX = startpoint.x;
+							ratioX = pointset.p3.x;
 						}
+						startpoint = fn.clone(pointset.p3);
+						self.controls.push(pointset);
 					}
+				});
 
-					ratioX -= initX;
-					ratioY = startpoint.y;
+				ratioX -= initX;
+				ratioY = startpoint.y;
 
-					// Scale all x, y by 1:1
-					fn.each(self.controls, function(i) {
-						self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
-						self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
+				// Scale all x, y by 1:1
+				fn.each(self.controls, function(i) {
+					self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
+					self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
 
-						self.controls[i].p1.x = self.controls[i].p0.x + (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
-						self.controls[i].p2.x = self.controls[i].p0.x + (self.controls[i].p2.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+					self.controls[i].p1.x = self.controls[i].p0.x + (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+					self.controls[i].p2.x = self.controls[i].p0.x + (self.controls[i].p2.x * (self.controls[i].p3.x - self.controls[i].p0.x));
 
-						self.controls[i].p0.y /= ratioY;
-						self.controls[i].p1.y /= ratioY;
-						self.controls[i].p2.y /= ratioY;
-						self.controls[i].p3.y /= ratioY;
-					});
+					self.controls[i].p0.y /= ratioY;
+					self.controls[i].p1.y /= ratioY;
+					self.controls[i].p2.y /= ratioY;
+					self.controls[i].p3.y /= ratioY;
+				});
 
-					self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
-				} else {
-					throw new Error('The svg path must start from M command');
-				}
+				self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
 			} else {
 				this.isCustom = false;
 				self.controls.push({
