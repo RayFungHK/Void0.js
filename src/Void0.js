@@ -615,17 +615,6 @@
 					6: 'cC'
 				};
 
-		function getAbsoultePoint(endPoint, lastPoint, isRelative) {
-			if (isRelative) {
-				return {
-					x: lastPoint.p3x + endPoint.p3x,
-					y: lastPoint.p3y + endPoint.p3y,
-				}
-			} else {
-				return endPoint;
-			}
-		}
-
 		function SVG() {
 
 		}
