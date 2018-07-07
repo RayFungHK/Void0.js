@@ -636,7 +636,7 @@
 			this.commands = [];
 
 			if (fn.isString(command)) {
-				command = command.replace(/\s*([mlvhqczst])\s*/ig, '\n$1 ').replace(/(?:,|(-)| +)/g, ' $1').trim().split('\n');
+				command = command.replace(/\s*([mlvhqczst])\s*/ig, '\n$1 ').replace(/(?:,|(-)| +)/g, ' $1').replace(/ +/g, ' ').trim().split('\n');
 
 				fn.each(command, function() {
 					var fragment = this.split(' '),
@@ -657,8 +657,8 @@
 						if (/q/i.test(commandset.command)) {
 							commandset.points.p1x = commandset.points.p2x;
 							commandset.points.p1y = commandset.points.p2y;
-							commandset.points.p2x = 0;
-							commandset.points.p2y = 0;
+							delete commandset.points.p2x;
+							delete commandset.points.p2y;
 						}
 						self.commands.push(commandset);
 					}
@@ -736,17 +736,19 @@
 			return this;
 		};
 
-		SVG.Path.prototype.exportAsString = function() {
+		SVG.Path.prototype.exportAsString = function(shortern) {
 			var commandString = '';
 			fn.each(this.commands, function() {
 				var index = 0,
-						point;
+						point,
+						first = true;
 
-				commandString += this.command;
+				commandString += (shortern ? '' : ' ') + this.command;
 				for (; index < 6; index++) {
 					point = 'p' + (Math.floor(index / 2) + 1) + 'xy'[index % 2];
 					if (fn.isDefined(this.points[point])) {
-						commandString += this.points[point].toFixed(2).replace(/(0+|\.0+)$/, '') + ' ';
+						commandString += ((shortern) ? (this.points[point] < 0 || first ? '' : ',') : (first ? '' : ' ')) + this.points[point].toFixed(2).replace(/(0+|\.0+)$/, '');
+						first = false;
 					}
 				}
 			});
