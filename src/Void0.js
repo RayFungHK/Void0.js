@@ -607,14 +607,6 @@
 	};
 
 	fn.SVG = (function() {
-		var lengthreq = {
-					0: 'zZ',
-					1: 'vhVH',
-					2: 'mlMLtT',
-					4: 'qsQS',
-					6: 'cC'
-				};
-
 		function SVG() {
 
 		}
@@ -630,26 +622,57 @@
 				fn.each(command, function() {
 					var fragment = this.split(' '),
 							commandkey = fragment.shift(),
-							commandset = {};
+							setlength;
 
 					if (self.commands.length === 0 && commandkey !== 'M') {
 						throw new Error('SVG Path should be started from M');
-					} else if (!lengthreq[fragment.length] || lengthreq[fragment.length].indexOf(commandkey) === -1) {
-						throw new Error('Invalid ' + commandkey + ' command');
 					} else {
-						commandset.command = commandkey;
-						commandset.points = {};
-						fn.each(fragment, function(i) {
-							var pointer = 6 - fragment.length + i - ((/[hH]/.test(commandkey)) ? 1 : 0);
-							commandset.points['p' + (Math.floor(pointer / 2) + 1) + 'xy'[pointer % 2]] = parseFloat(this) || 0;
-						});
-						if (/q/i.test(commandset.command)) {
-							commandset.points.p1x = commandset.points.p2x;
-							commandset.points.p1y = commandset.points.p2y;
-							delete commandset.points.p2x;
-							delete commandset.points.p2y;
+						if (/z/i.test(commandkey)) {
+							// No parameters
+							return true;
+						} else if (/[vh]/i.test(commandkey)) {
+							fn.each(fragment, function(i) {
+								var dimen = (/v/i.test(commandkey)) ? 'y' : 'x',
+										lineToCommand = {
+											command: commandkey,
+											points: {}
+										};
+
+								lineToCommand.points['p3' + dimen] = parseFloat(this) || 0;
+								self.commands.push(lineToCommand);
+							});
+						} else if (/[qclt]/i.test(commandkey)) {
+							var slice;
+							while ((slice = fragment.splice(0, (/[lt]/i.test(commandkey)) ? 2 : (/q/i.test(commandkey) ? 4 : 6))).length) {
+								if (slice.length !== ((/[lt]/i.test(commandkey)) ? 2 : (/q/i.test(commandkey) ? 4 : 6))) {
+									throw new Error('Invalid ' + commandkey + ' command');
+								}
+								var commandset = {
+									command: commandkey,
+									points: {}
+								};
+								fn.each(slice, function(i) {
+									var pointer = 6 - slice.length + i;
+									if (/q/i.test(commandset.command) && pointer < 4) {
+										pointer -= 2;
+									}
+									commandset.points['p' + (Math.floor(pointer / 2) + 1) + 'xy'[pointer % 2]] = parseFloat(this) || 0;
+								});
+								self.commands.push(commandset);
+							}
+						} else if (/m/i.test(commandkey)) {
+							fragment = fragment.splice(-2, 2);
+							if (fragment.length != 2) {
+								throw new Error('Invalid ' + commandkey + ' command');
+							}
+							self.commands.push({
+								command: commandkey,
+								points: {
+									p3x: parseFloat(fragment[0]) || 0,
+									p3y: parseFloat(fragment[1]) || 0
+								}
+							});
 						}
-						self.commands.push(commandset);
 					}
 				});
 			}
@@ -750,7 +773,7 @@
 						converted = false,
 						self = this;
 
-				if (/vhl/i.test(this.command)) {
+				if (/[vhl]/i.test(this.command)) {
 					this.points.p1x = (!isAbsolute) ? 0 : currentPoint.p3x;
 					this.points.p1y = (!isAbsolute) ? 0 : currentPoint.p3y;
 					this.points.p2x = this.points.p3x;
@@ -764,10 +787,10 @@
 					}
 					converted = true;
 				} else if (/[st]/i.test(this.command)) {
-					if (!/c/i.test(previousCommand) && /s/i.test(this.command)) {
+					if (!/[cs]/i.test(previousCommand) && /s/i.test(this.command)) {
 						throw new Error('Cannot convert s command beacuse there is no c command for reference.');
 					}
-					if (!/q/i.test(previousCommand) && /t/i.test(this.command)) {
+					if (!/[qt]/i.test(previousCommand) && /t/i.test(this.command)) {
 						throw new Error('Cannot convert t command beacuse there is no q command for reference.');
 					}
 					for (var i = 0; i < 4; i++) {
@@ -901,7 +924,7 @@
 
 			if (fn.isString(p1x)) {
 				path = new fn.SVG.Path(p1x);
-				if (path.commands.length === 0 || path.commands[0].command !== 'M') {
+				if (path.commands.length < 2 || path.commands[0].command !== 'M') {
 					throw new Error('Invalid SVG path');
 				}
 
@@ -1150,12 +1173,12 @@
 
 		// Convert SVG path to multple points Cubic Bezier
 		fn.each({
-			easeInElastic: 'M0,60c0,0,11.8,0,20,0c8,0,13,0,20,0c7.3,0,14-3,20,0c5.7,2.8,8,5,14,0s13-15,19,0c10,25,13,32,17,0s6-50,9-60',
-			easeOutElastic: 'M0.1,81.6c3-10,5-28,9-60s7-25,17,0c6,15,13,5,19,0s8.3-2.8,14,0c6,3,12.7,0,20,0c7,0,12,0,20,0c8.2,0,20,0,20,0',
-			easeInOutElastic: 'M0,71.5c9,0,14-1,23,0s14-5,20,1s6,4,7,0s14-59,16-67s6-6,11,0s10,7,17,5s19-1,26-1',
-			easeInBounce: 'M0,57.1c5-2,6-2,11,0c7-5,13-5,21,0c14-20,30-20,44,0c7-20,23-57,44-57',
-			easeOutBounce: 'M0,57.3c21,0,37-37,44-57c14,20,30,20,44,0c8,5,14,5,21,0c5,2,6,2,11,0',
-			easeInOutBounce: 'M0.1,58.4c3.2-2,3.9-2,7.1,0c3.2-3.6,5.6-3.8,9.5,0c4.2-9.3,16.1-9.3,20.3,0c4.5-20,12.3-22,19.7-28s19.1-10,23.6-30c4.2,9.3,16.1,9.3,20.3,0c3.9,3.8,6.3,3.6,9.5,0c3.2,2,3.9,2,7.1,0'
+			easeInElastic: 'M0,0c0,0,11.8,0,20,0c8,0,13,0,20,0c7.3,0,14-3,20,0c5.7,2.8,8,5,14,0s13-15,19,0c10,25,13,32,17,0s6-50,9-60',
+			easeOutElastic: 'M0,0c3-10,5-28,9-60s7-25,17,0c6,15,13,5,19,0s8.3-2.8,14,0c6,3,12.7,0,20,0c7,0,12,0,20,0c8.2,0,20,0,20,0',
+			easeInOutElastic: 'M0,0c9,0,14-1,23,0s14-5,20,1s6,4,7,0s14-59,16-67s6-6,11,0s10,7,17,5s19-1,26-1',
+			easeInBounce: 'M0,0c5-2,6-2,11,0c7-5,13-5,21,0c14-20,30-20,44,0c7-20,23-57,44-57',
+			easeOutBounce: 'M0,0c21,0,37-37,44-57c14,20,30,20,44,0c8,5,14,5,21,0c5,2,6,2,11,0',
+			easeInOutBounce: 'M0,0c3.2-2,3.9-2,7.1,0c3.2-3.6,5.6-3.8,9.5,0c4.2-9.3,16.1-9.3,20.3,0c4.5-20,12.3-22,19.7-28s19.1-10,23.6-30c4.2,9.3,16.1,9.3,20.3,0c3.9,3.8,6.3,3.6,9.5,0c3.2,2,3.9,2,7.1,0'
 		}, function(easing, bezier) {
 			CubicBezier[easing] = function() {
 				return new CubicBezier(bezier);
