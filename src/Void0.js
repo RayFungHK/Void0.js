@@ -641,10 +641,10 @@
 								lineToCommand.points['p3' + dimen] = parseFloat(this) || 0;
 								self.commands.push(lineToCommand);
 							});
-						} else if (/[qclt]/i.test(commandkey)) {
+						} else if (/[qclts]/i.test(commandkey)) {
 							var slice;
-							while ((slice = fragment.splice(0, (/[lt]/i.test(commandkey)) ? 2 : (/q/i.test(commandkey) ? 4 : 6))).length) {
-								if (slice.length !== ((/[lt]/i.test(commandkey)) ? 2 : (/q/i.test(commandkey) ? 4 : 6))) {
+							while ((slice = fragment.splice(0, (/[lt]/i.test(commandkey)) ? 2 : (/[qs]/i.test(commandkey) ? 4 : 6))).length) {
+								if (slice.length !== ((/[lt]/i.test(commandkey)) ? 2 : (/[qs]/i.test(commandkey) ? 4 : 6))) {
 									throw new Error('Invalid ' + commandkey + ' command');
 								}
 								var commandset = {
@@ -793,7 +793,8 @@
 					if (!/[qt]/i.test(previousCommand) && /t/i.test(this.command)) {
 						throw new Error('Cannot convert t command beacuse there is no q command for reference.');
 					}
-					for (var i = 0; i < 4; i++) {
+
+					for (var i = 0; i < ((/s/i.test(this.command)) ? 2 : 4); i++) {
 						var point = 'p' + (Math.floor(i / 2) + 1) + 'xy'[i % 2],
 								refer = 'p' + (Math.floor((3 - i) / 2) + 1) + 'xy'[i % 2],
 								base = 'p3' + 'xy'[i % 2];
@@ -920,12 +921,12 @@
 					if (path.commands.length < 2 || path.commands[0].command !== 'M') {
 						throw new Error('Invalid SVG path');
 					}
+					path.convertToCurve().convertToRelative();
 					pathCache[p1x] = path;
 				} else {
 					path = pathCache[p1x];
 				}
 
-				path.convertToCurve().convertToRelative();
 				fn.each(path.commands, function() {
 					var xLength,
 							pointset;
@@ -935,8 +936,8 @@
 						ratioX = startpoint.x;
 						initX = ratioX;
 					} else {
-						if (!/c/i.test(this.command)) {
-							throw new Error('Incorrect svg path c command');
+						if (this.command !== 'c') {
+							throw new Error('Invalid SVG path for Cubic Bezier');
 						}
 
 						xLength = this.points.p3x;
