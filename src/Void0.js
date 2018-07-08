@@ -892,15 +892,7 @@
 	})();
 
 	fn.CubicBezier = (function() {
-		function conv(value) {
-			if (fn.isString(value)) {
-				if (value[0] === ',') {
-					value = value.substring(1);
-				}
-				return parseFloat(value) || 0;
-			}
-			return 0;
-		}
+		var pathCache = {};
 
 		/**
 		 * CubicBezier Object uses to calculate the easing effect
@@ -922,10 +914,15 @@
 			self.lastStep = 0;
 			self.controls = [];
 
-			if (fn.isString(p1x)) {
-				path = new fn.SVG.Path(p1x);
-				if (path.commands.length < 2 || path.commands[0].command !== 'M') {
-					throw new Error('Invalid SVG path');
+			if (fn.isString(p1x) && (p1x = p1x.trim())) {
+				if (!pathCache[p1x]) {
+					path = new fn.SVG.Path(p1x);
+					if (path.commands.length < 2 || path.commands[0].command !== 'M') {
+						throw new Error('Invalid SVG path');
+					}
+					pathCache[p1x] = path;
+				} else {
+					path = pathCache[p1x];
 				}
 
 				path.convertToCurve().convertToRelative();
