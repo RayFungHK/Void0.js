@@ -922,75 +922,75 @@
 						throw new Error('Invalid SVG path');
 					}
 					path.convertToCurve().convertToRelative();
-					pathCache[p1x] = path;
-				} else {
-					path = pathCache[p1x];
-				}
 
-				fn.each(path.commands, function() {
-					var xLength,
-							pointset;
+					fn.each(path.commands, function() {
+						var xLength,
+								pointset;
 
-					if (this.command === 'M') {
-						startpoint = {x: this.points.p3x, y: 0};
-						ratioX = startpoint.x;
-						initX = ratioX;
-					} else {
-						if (this.command !== 'c') {
-							throw new Error('Invalid SVG path for Cubic Bezier');
-						}
-
-						xLength = this.points.p3x;
-						pointset = {
-							p0: startpoint,
-							p1: {
-								x: this.points.p1x / xLength,
-								y: startpoint.y - this.points.p1y
-							},
-							p2: {
-								x: this.points.p2x / xLength,
-								y: startpoint.y - this.points.p2y
-							},
-							p3: {
-								x: startpoint.x + xLength,
-								y: startpoint.y - this.points.p3y
-							},
-							samples: null
-						};
-
-						// if p1x < p0x or p2x > p3x, it may cause the overlayed t
-						if (pointset.p1.x < 0 || pointset.p2.x > 1) {
-							throw new Error('Invalid cubic bezier curve');
-						}
-
-						if (pointset.p3.x <= ratioX) {
-							throw new Error('Current start point x less than previous point x.');
+						if (this.command === 'M') {
+							startpoint = {x: this.points.p3x, y: 0};
+							ratioX = startpoint.x;
+							initX = ratioX;
 						} else {
-							ratioX = pointset.p3.x;
+							if (this.command !== 'c') {
+								throw new Error('Invalid SVG path for Cubic Bezier');
+							}
+
+							xLength = this.points.p3x;
+							pointset = {
+								p0: startpoint,
+								p1: {
+									x: this.points.p1x / xLength,
+									y: startpoint.y - this.points.p1y
+								},
+								p2: {
+									x: this.points.p2x / xLength,
+									y: startpoint.y - this.points.p2y
+								},
+								p3: {
+									x: startpoint.x + xLength,
+									y: startpoint.y - this.points.p3y
+								},
+								samples: null
+							};
+
+							// if p1x < p0x or p2x > p3x, it may cause the overlayed t
+							if (pointset.p1.x < 0 || pointset.p2.x > 1) {
+								throw new Error('Invalid cubic bezier curve');
+							}
+
+							if (pointset.p3.x <= ratioX) {
+								throw new Error('Current start point x less than previous point x.');
+							} else {
+								ratioX = pointset.p3.x;
+							}
+							startpoint = fn.clone(pointset.p3);
+							self.controls.push(pointset);
 						}
-						startpoint = fn.clone(pointset.p3);
-						self.controls.push(pointset);
-					}
-				});
+					});
 
-				ratioX -= initX;
-				ratioY = startpoint.y;
+					ratioX -= initX;
+					ratioY = startpoint.y;
 
-				// Scale all x, y by 1:1
-				fn.each(self.controls, function(i) {
-					self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
-					self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
+					// Scale all x, y by 1:1
+					fn.each(self.controls, function(i) {
+						self.controls[i].p0.x = (self.controls[i].p0.x - initX) / ratioX;
+						self.controls[i].p3.x = (self.controls[i].p3.x - initX) / ratioX;
 
-					self.controls[i].p1.x = self.controls[i].p0.x + (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
-					self.controls[i].p2.x = self.controls[i].p0.x + (self.controls[i].p2.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+						self.controls[i].p1.x = self.controls[i].p0.x + (self.controls[i].p1.x * (self.controls[i].p3.x - self.controls[i].p0.x));
+						self.controls[i].p2.x = self.controls[i].p0.x + (self.controls[i].p2.x * (self.controls[i].p3.x - self.controls[i].p0.x));
 
-					self.controls[i].p0.y /= ratioY;
-					self.controls[i].p1.y /= ratioY;
-					self.controls[i].p2.y /= ratioY;
-					self.controls[i].p3.y /= ratioY;
-				});
+						self.controls[i].p0.y /= ratioY;
+						self.controls[i].p1.y /= ratioY;
+						self.controls[i].p2.y /= ratioY;
+						self.controls[i].p3.y /= ratioY;
+					});
 
-				self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
+					self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
+					pathCache[p1x] = self.controls;
+				} else {
+					self.controls = pathCache[p1x];
+				}
 			} else {
 				this.isCustom = false;
 				self.controls.push({
