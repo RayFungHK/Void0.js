@@ -234,6 +234,10 @@
 		 * @return {Void0}
 		 */
 		each: function(object, callback) {
+			if (!object) {
+				return this;
+			}
+
 			// Object.getPrototypeOf support IE9
 			var prototype = (object.__proto__ || Object.getPrototypeOf(object)),
 					index;
@@ -1113,11 +1117,18 @@
 			return 0;
 		};
 
-		CubicBezier.prototype.stepping = function() {
-			var steps = ary.splice.call(arguments),
-					total = 0;
-			if (this.controls.length - 1 !== steps.length) {
-				throw new Error('You should provide ' + (this.controls.length - 1) + ' steps to reset the cubic bezier timeline.');
+		CubicBezier.prototype.rescale = function() {
+			var steps = (arguments.length) ? ary.slice.call(arguments) : null,
+					total = 0,
+					p0x = 0,
+					previous = {
+						p1x: 0,
+						p2x: 0
+					},
+					self = this;
+
+			if (steps && this.controls.length !== steps.length) {
+				throw new Error('You should provide ' + this.controls.length + ' steps to rescale the cubic bezier timeline.');
 			} else if (this.controls.length > 2) {
 				fn.each(steps, function() {
 					total += (parseFloat(this) || 0);
@@ -1125,14 +1136,22 @@
 						return false;
 					}
 				});
-				if (total !== 1) {
+
+				if (steps && total !== 1) {
 					throw new Error('The sum of all timelines must equal 1.');
 				} else {
-					fn.each(this.controls, function(i, ctrl) {
-						if (i) {
-							//this.controls[i].
-						}
+					fn.each(this.controls, function(i) {
+						previous.p1x = (this.p1.x - this.p0.x) / (this.p3.x - this.p0.x);
+						previous.p2x = (this.p2.x - this.p0.x) / (this.p3.x - this.p0.x);
+
+						this.p0.x = p0x;
+						p0x += (i === self.controls.length - 1) ? 1 - p0x : ((steps) ? steps[i] : 1 / self.controls.length);
+						this.p3.x = p0x;
+						this.p1.x = this.p0.x + (this.p3.x - this.p0.x) * previous.p1x;
+						this.p2.x = this.p0.x + (this.p3.x - this.p0.x) * previous.p2x;
 					});
+					// Reset the sample table
+					this.samples = null;
 				}
 			}
 			return this;
@@ -1171,9 +1190,9 @@
 
 		// Convert SVG path to multple points Cubic Bezier
 		fn.each({
-			easeInElastic: 'M0,0c0,0,11.8,0,20,0c8,0,13,0,20,0c7.3,0,14-3,20,0c5.7,2.8,8,5,14,0s13-15,19,0c10,25,13,32,17,0s6-50,9-60',
-			easeOutElastic: 'M0,0c3-10,5-28,9-60s7-25,17,0c6,15,13,5,19,0s8.3-2.8,14,0c6,3,12.7,0,20,0c7,0,12,0,20,0c8.2,0,20,0,20,0',
-			easeInOutElastic: 'M0,0c9,0,14-1,23,0s14-5,20,1s6,4,7,0s14-59,16-67s6-6,11,0s10,7,17,5s19-1,26-1',
+			easeInElastic: 'M0,0c0,0,11.9-1,20,0c7.7,0.9,12.7,0.9,20,0c7.2-0.9,14-3,20,0c5.7,2.8,8,5,14,0s13-15,19,0c10,25,13,32,17,0s6-50,9-60',
+			easeOutElastic: 'M0,0c3-10,5-28,9-60s7-25,17,0c6,15,13,5,19,0s8.3-2.8,14,0c6,3,12.8,0.9,20,0c7.3-0.9,12.3-0.9,20,0c8.1,1,20,0,20,0',
+			easeInOutElastic: 'M0,91.5c0,0,11.9-1,20,0c7.7,0.9,12.7,0.9,20,0c7.2-0.9,14-3,20,0c5.7,2.8,8,5,14,0s13-15,19,0c10,25,13,32,17,0S124,54,128,22c4-32,7-25,17,0c6,15,13,5,19,0s8.3-2.8,14,0c6,3,12.8,0.9,20,0c7.3-0.9,12.3-0.9,20,0c8.1,1,20,0,20,0',
 			easeInBounce: 'M0,0c5-2,6-2,11,0c7-5,13-5,21,0c14-20,30-20,44,0c7-20,23-57,44-57',
 			easeOutBounce: 'M0,0c21,0,37-37,44-57c14,20,30,20,44,0c8,5,14,5,21,0c5,2,6,2,11,0',
 			easeInOutBounce: 'M0,0c3.2-2,3.9-2,7.1,0c3.2-3.6,5.6-3.8,9.5,0c4.2-9.3,16.1-9.3,20.3,0c4.5-20,12.3-22,19.7-28s19.1-10,23.6-30c4.2,9.3,16.1,9.3,20.3,0c3.9,3.8,6.3,3.6,9.5,0c3.2,2,3.9,2,7.1,0'

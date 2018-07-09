@@ -9,7 +9,7 @@
 </head>
 <body>
   <div id="test" data-test="hello">Test</div>
-  <div id="draw" style="position: relative; height: 100px; width: 100px;"></div>
+  <div id="draw" style="position: relative; height: 500px; width: 500px;"></div>
   <script>
     __('#test').css({
       'background-color': '#000',
@@ -44,13 +44,13 @@
       if (t2 > 1) {
         clearTimeout(ct);
       } else {
-        t2 += fps / 1000;
+        t2 += fps / 5000;
       }
-      x = t2 * 100;
+      x = t2 * 500;
     }
 
-    var cb = new __.CubicBezier('M0.5,435.8c0-172,59-319,103-185s99,137,118-13s35-346,59-164s57,700,94,481s30-353,104-353');
-    console.log(cb)
+    var cb = __.CubicBezier.easeOutBounce();
+    cb.rescale();
     function run() {
       var v = cb.progress(200, t1);
       __('#test').css({
@@ -61,9 +61,9 @@
       if (t1 > 1) {
         clearTimeout(tt);
       } else {
-        t1 += fps / 1000;
+        t1 += fps / 5000;
       }
-      x = t1 * 100;
+      x = t1 * 500;
 
       __('#draw').append(__('<i></i>').css({
         display: 'block',
@@ -72,7 +72,7 @@
         position: 'absolute',
         left: x + 'px',
         'background-color': '#000',
-        bottom: (v / 2) + 'px'
+        bottom: (v) + 'px'
       }));
     }
     var tt = setTimeout(run, fps);
