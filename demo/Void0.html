@@ -49,8 +49,15 @@
       x = t2 * 500;
     }
 
+    var svg = new __.SVG(100, 100);
+    svg.viewbox(0,0,1,1);
+    __('body').append(svg.element);
+    console.log(svg)
+
     var cb = __.CubicBezier.easeOutBounce();
     cb.rescale();
+    svg.append(cb);
+    console.log(cb)
     function run() {
       var v = cb.progress(200, t1);
       __('#test').css({

@@ -611,9 +611,24 @@
 	};
 
 	fn.SVG = (function() {
-		function SVG() {
-
+		function SVG(width, height) {
+			this.element = Void0(doc.createElement('svg'));
+			this.element.attr('width', parseFloat(width) || 0);
+			this.element.attr('height', parseFloat(height) || 0);
 		}
+
+		SVG.prototype.viewbox = function(x, y, width, height) {
+			var viewbox = [parseFloat(x) || 0, parseFloat(y) || 0, parseFloat(width) || 0, parseFloat(height) || 0];
+			this.element.attr('viewbox', viewbox.join(' '));
+			return this;
+		};
+
+		SVG.prototype.append = function(object) {
+			if (object instanceof SVG.Path) {
+				this.element.append(object);
+			}
+			return this;
+		};
 
 		SVG.Path = function(command) {
 			var self = this;
@@ -916,8 +931,8 @@
 					xLength,
 					startpoint;
 
-			self.lastStep = 0;
-			self.controls = [];
+			this.lastStep = 0;
+			this.controls = [];
 
 			if (fn.isString(p1x) && (p1x = p1x.trim())) {
 				if (!pathCache[p1x]) {
@@ -991,11 +1006,17 @@
 					});
 
 					self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
-					pathCache[p1x] = self.controls;
+					pathCache[p1x] = {
+						path: path,
+						controls: self.controls
+					};
+					this.path = path;
 				} else {
-					self.controls = pathCache[p1x];
+					self.controls = pathCache[p1x].controls;
+					this.path = pathCache[p1x].path;
 				}
 			} else {
+				this.command = '';
 				this.isCustom = false;
 				self.controls.push({
 					p0: {x: 0, y: 0},
@@ -1141,14 +1162,24 @@
 					throw new Error('The sum of all timelines must equal 1.');
 				} else {
 					fn.each(this.controls, function(i) {
-						previous.p1x = (this.p1.x - this.p0.x) / (this.p3.x - this.p0.x);
-						previous.p2x = (this.p2.x - this.p0.x) / (this.p3.x - this.p0.x);
+						var orgDiff = this.p3.x - this.p0.x,
+								newDiff,
+								ratio;
+
+						previous.p1x = (this.p1.x - this.p0.x) / orgDiff;
+						previous.p2x = (this.p2.x - this.p0.x) / orgDiff;
 
 						this.p0.x = p0x;
 						p0x += (i === self.controls.length - 1) ? 1 - p0x : ((steps) ? steps[i] : 1 / self.controls.length);
 						this.p3.x = p0x;
-						this.p1.x = this.p0.x + (this.p3.x - this.p0.x) * previous.p1x;
-						this.p2.x = this.p0.x + (this.p3.x - this.p0.x) * previous.p2x;
+
+						newDiff = this.p3.x - this.p0.x;
+						this.p1.x = this.p0.x + newDiff * previous.p1x;
+						this.p2.x = this.p0.x + newDiff * previous.p2x;
+						ratio = newDiff / orgDiff;
+						this.path[i + 1].p1x *= ratio;
+						this.path[i + 1].p2x *= ratio;
+						this.path[i + 1].p3x *= ratio;
 					});
 					// Reset the sample table
 					this.samples = null;
