@@ -610,6 +610,66 @@
 		}
 	};
 
+	(function() {
+		var canvas = doc.createElement('canvas'),
+				ctx = canvas.getContext('2d'),
+				callbackList = [],
+				URLObj = win.URL || win.webkitURL;
+
+		function ClipboardData(object) {
+			var self = this;
+			if (object.type) {
+				if (/text/.test(object.type)) {
+					this.type = 'string';
+					object.getAsString(function(s) {
+						self.data = s;
+					});
+				} else if (/image/.test(object.type)) {
+					this.type = 'image';
+					this.data = new Image();
+
+					this.data.onload = function() {
+            // Update dimensions of the canvas with the dimensions of the image
+            canvas.width = this.width;
+            canvas.height = this.height;
+
+            // Draw the image
+            ctx.drawImage(this, 0, 0);
+	        };
+
+					this.data.src = URLObj.createObjectURL(object.getAsFile());
+				}
+			}
+		}
+
+		fn.clipboard = function(callback) {
+			if (!win.eventEmitters || !win.eventEmitters['paste']) {
+				Void0(win).on('paste', function(e) {
+					console.log(e)
+					if (e.clipboardData) {
+						var items = e.clipboardData.items,
+								index = 0,
+								item,
+								data;
+
+						while (item = items[index++]) {
+							data = new ClipboardData(item);
+							fn.each(callbackList, function() {
+								this.call(data, data);
+							});
+						}
+					}
+				});
+			}
+
+			if (fn.isCallable(callback)) {
+				callbackList.push(callback);
+			}
+
+			return this;
+		};
+	})();
+
 	fn.SVG = (function() {
 		function SVG(width, height) {
 			this.element = Void0(doc.createElement('svg'));
@@ -1017,15 +1077,31 @@
 					this.path = pathCache[p1x].path;
 				}
 			} else {
-				this.command = '';
-				this.isCustom = false;
-				self.controls.push({
-					p0: {x: 0, y: 0},
-					p1: {x: parseFloat(p1x) || 0, y: parseFloat(p1y) || 0},
-					p2: {x: parseFloat(p2x) || 0, y: parseFloat(p2y) || 0},
-					p3: {x: 1, y: 1},
-					samples: null
-				});
+				p1x = parseFloat(p1x) || 0;
+				p1y = parseFloat(p1y) || 0;
+				p2x = parseFloat(p2x) || 0;
+				p2y = parseFloat(p2y) || 0;
+				var command = 'M0 0 c' + p1x + ' ' + p1y + ' ' + p2x + ' ' + p2y + ' 1 1';
+
+				if (!pathCache[command]) {
+					this.isCustom = false;
+					this.path = new fn.SVG.Path(command);
+					self.controls.push({
+						p0: {x: 0, y: 0},
+						p1: {x: p1x, y: p1y},
+						p2: {x: p2x, y: p2y},
+						p3: {x: 1, y: 1},
+						samples: null
+					});
+
+					pathCache[command] = {
+						path: path,
+						controls: self.controls
+					};
+				} else {
+					this.controls = pathCache[command].controls;
+					this.path = pathCache[command].path;
+				}
 			}
 		}
 
@@ -2622,7 +2698,6 @@
 								} catch (e) {
 									return value;
 								}
-								return value;
 							}
 						}
 						return null;
