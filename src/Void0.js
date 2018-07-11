@@ -1030,7 +1030,6 @@
 
 			this.lastStep = 0;
 			this.controls = [];
-			this.path = null;
 
 			if (fn.isString(p1x) && (p1x = p1x.trim())) {
 				if (!pathCache[p1x]) {
@@ -1104,25 +1103,19 @@
 					});
 
 					this.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
-					pathCache[p1x] = {
-						path: path,
-						controls: self.controls
-					};
-					this.path = path;
+					pathCache[p1x] = this.controls;
 				} else {
-					this.controls = pathCache[p1x].controls;
-					this.path = pathCache[p1x].path;
+					this.controls = pathCache[p1x];
 				}
 			} else {
 				p1x = parseFloat(p1x) || 0;
 				p1y = parseFloat(p1y) || 0;
 				p2x = parseFloat(p2x) || 0;
 				p2y = parseFloat(p2y) || 0;
-				var command = 'M0 0 c' + p1x + ' ' + p1y + ' ' + p2x + ' ' + p2y + ' 1 1';
+				var command = p1x + ' ' + p1y + ' ' + p2x + ' ' + p2y;
 
 				if (!pathCache[command]) {
 					this.isCustom = false;
-					this.path = new fn.SVG.Path(command);
 					self.controls.push({
 						p0: {x: 0, y: 0},
 						p1: {x: p1x, y: p1y},
@@ -1131,13 +1124,9 @@
 						samples: null
 					});
 
-					pathCache[command] = {
-						path: path,
-						controls: self.controls
-					};
+					pathCache[command] = self.controls;
 				} else {
-					this.controls = pathCache[command].controls;
-					this.path = pathCache[command].path;
+					this.controls = pathCache[command];
 				}
 			}
 		}
@@ -1250,58 +1239,6 @@
 				return calcBezier(getTForX(t, ctls[step], this), ctls[step], 'y', this) * value;
 			}
 			return 0;
-		};
-
-		CubicBezier.prototype.rescale = function() {
-			var steps = (arguments.length) ? ary.slice.call(arguments) : null,
-					total = 0,
-					p0x = 0,
-					previous = {
-						p1x: 0,
-						p2x: 0
-					},
-					self = this;
-
-			if (steps && this.controls.length !== steps.length) {
-				throw new Error('You should provide ' + this.controls.length + ' steps to rescale the cubic bezier timeline.');
-			} else if (this.controls.length > 2) {
-				fn.each(steps, function() {
-					total += (parseFloat(this) || 0);
-					if (total > 1) {
-						return false;
-					}
-				});
-
-				if (steps && total !== 1) {
-					throw new Error('The sum of all timelines must equal 1.');
-				} else {
-					fn.each(this.controls, function(i) {
-						var orgDiff = this.p3.x - this.p0.x,
-								newDiff,
-								ratio;
-
-						previous.p1x = (this.p1.x - this.p0.x) / orgDiff;
-						previous.p2x = (this.p2.x - this.p0.x) / orgDiff;
-
-						this.p0.x = p0x;
-						p0x += (i === self.controls.length - 1) ? 1 - p0x : ((steps) ? steps[i] : 1 / self.controls.length);
-						this.p3.x = p0x;
-
-						newDiff = this.p3.x - this.p0.x;
-						this.p1.x = this.p0.x + newDiff * previous.p1x;
-						this.p2.x = this.p0.x + newDiff * previous.p2x;
-						ratio = newDiff / orgDiff;
-
-						// Rescale the original path
-						self.path.commands[i + 1].points.p1x *= ratio;
-						self.path.commands[i + 1].points.p2x *= ratio;
-						self.path.commands[i + 1].points.p3x *= ratio;
-					});
-					// Reset the sample table
-					this.samples = null;
-				}
-			}
-			return this;
 		};
 
 		fn.each({
