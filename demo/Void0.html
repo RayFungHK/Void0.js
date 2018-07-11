@@ -57,7 +57,7 @@
     var cb = __.CubicBezier.easeOutBounce();
     cb.rescale();
     svg.append(cb);
-    console.log(cb)
+    console.log(cb.path.exportAsString())
     function run() {
       var v = cb.progress(200, t1);
       __('#test').css({

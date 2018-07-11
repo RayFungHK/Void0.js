@@ -933,6 +933,7 @@
 
 			this.lastStep = 0;
 			this.controls = [];
+			this.path = null;
 
 			if (fn.isString(p1x) && (p1x = p1x.trim())) {
 				if (!pathCache[p1x]) {
@@ -1005,14 +1006,14 @@
 						self.controls[i].p3.y /= ratioY;
 					});
 
-					self.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
+					this.controls[self.controls.length - 1].p3 = {x: 1, y: 1};
 					pathCache[p1x] = {
 						path: path,
 						controls: self.controls
 					};
 					this.path = path;
 				} else {
-					self.controls = pathCache[p1x].controls;
+					this.controls = pathCache[p1x].controls;
 					this.path = pathCache[p1x].path;
 				}
 			} else {
@@ -1177,9 +1178,11 @@
 						this.p1.x = this.p0.x + newDiff * previous.p1x;
 						this.p2.x = this.p0.x + newDiff * previous.p2x;
 						ratio = newDiff / orgDiff;
-						this.path[i + 1].p1x *= ratio;
-						this.path[i + 1].p2x *= ratio;
-						this.path[i + 1].p3x *= ratio;
+
+						// Rescale the original path
+						self.path.commands[i + 1].points.p1x *= ratio;
+						self.path.commands[i + 1].points.p2x *= ratio;
+						self.path.commands[i + 1].points.p3x *= ratio;
 					});
 					// Reset the sample table
 					this.samples = null;
