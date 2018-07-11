@@ -8,6 +8,9 @@
   </head>
 </head>
 <body>
+  <canvas id="image"></canvas>
+  <input type="text" name="what" />
+  <input type="text" name="is" />
   <div id="test" data-test="hello">Test</div>
   <div id="draw" style="position: relative; height: 500px; width: 500px;"></div>
   <script>
@@ -86,8 +89,14 @@
     var ct = setTimeout(run2, fps);
 
 
-  __.clipboard(function() {
-      console.log(this)
+  var canvas = __('#image')[0];
+  __.clipboard('input[name="what"]', function(data) {
+      if (data.type === 'image') {
+        var ctx = canvas.getContext('2d');
+        canvas.width = data.data.width;
+        canvas.height = data.data.height;
+        ctx.drawImage(data.data, 0, 0);
+      }
     });
   </script>
 </body>

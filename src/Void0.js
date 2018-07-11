@@ -618,34 +618,49 @@
 
 		function ClipboardData(object) {
 			var self = this;
+
+			this.promise = null;
+
 			if (object.type) {
 				if (/text/.test(object.type)) {
 					this.type = 'string';
 					object.getAsString(function(s) {
 						self.data = s;
 					});
+					this.promise = Void0.Promise.resolve(this);
 				} else if (/image/.test(object.type)) {
 					this.type = 'image';
 					this.data = new Image();
 
-					this.data.onload = function() {
-            // Update dimensions of the canvas with the dimensions of the image
-            canvas.width = this.width;
-            canvas.height = this.height;
+					this.promise = new Void0.Promise(function(resolve, reject) {
+						self.data.onload = function() {
+	            canvas.width = this.width;
+	            canvas.height = this.height;
+	            ctx.drawImage(this, 0, 0);
+							resolve(self);
+		        };
 
-            // Draw the image
-            ctx.drawImage(this, 0, 0);
-	        };
-
-					this.data.src = URLObj.createObjectURL(object.getAsFile());
+						self.data.src = URLObj.createObjectURL(object.getAsFile());
+					});
 				}
 			}
 		}
 
-		fn.clipboard = function(callback) {
+		ClipboardData.prototype.trigger = function(callback) {
+			if (this.promise instanceof Void0.Promise) {
+				this.promise.then(callback);
+			}
+			return this;
+		};
+
+		fn.clipboard = function(selector, callback) {
+			if (fn.isCallable(selector)) {
+				callback = selector;
+				selector = '';
+			}
+
 			if (!win.eventEmitters || !win.eventEmitters['paste']) {
 				Void0(win).on('paste', function(e) {
-					console.log(e)
 					if (e.clipboardData) {
 						var items = e.clipboardData.items,
 								index = 0,
@@ -655,7 +670,9 @@
 						while (item = items[index++]) {
 							data = new ClipboardData(item);
 							fn.each(callbackList, function() {
-								this.call(data, data);
+								if (!this.selector || (this.selector && Void0(e.target).is(this.selector))) {
+									data.trigger(this.callback);
+								}
 							});
 						}
 					}
@@ -663,7 +680,10 @@
 			}
 
 			if (fn.isCallable(callback)) {
-				callbackList.push(callback);
+				callbackList.push({
+					callback: callback,
+					selector: selector
+				});
 			}
 
 			return this;
