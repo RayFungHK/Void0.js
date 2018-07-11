@@ -624,10 +624,12 @@
 			if (object.type) {
 				if (/text/.test(object.type)) {
 					this.type = 'string';
-					object.getAsString(function(s) {
-						self.data = s;
+					this.promise = new Void0.Promise(function(resolve, reject) {
+						object.getAsString(function(data) {
+							self.data = data;
+							resolve(self);
+						});
 					});
-					this.promise = Void0.Promise.resolve(this);
 				} else if (/image/.test(object.type)) {
 					this.type = 'image';
 					this.data = new Image();
@@ -643,6 +645,10 @@
 						self.data.src = URLObj.createObjectURL(object.getAsFile());
 					});
 				}
+			} else if (fn.isString(object)) {
+				this.type = 'string';
+				this.data = object;
+				this.promise = Void0.Promise.resolve(this);
 			}
 		}
 
@@ -661,19 +667,30 @@
 
 			if (!win.eventEmitters || !win.eventEmitters['paste']) {
 				Void0(win).on('paste', function(e) {
-					if (e.clipboardData) {
-						var items = e.clipboardData.items,
-								index = 0,
+					var clipboard = e.clipboardData || win.clipboardData;
+
+					if (clipboard) {
+						var index = 0,
 								item,
 								data;
 
-						while (item = items[index++]) {
-							data = new ClipboardData(item);
+						// IE9+ clipboardData
+						if (!clipboard.items) {
+							data = new ClipboardData(clipboard.getData('text'));
 							fn.each(callbackList, function() {
 								if (!this.selector || (this.selector && Void0(e.target).is(this.selector))) {
 									data.trigger(this.callback);
 								}
 							});
+						} else {
+							while (item = clipboard.items[index++]) {
+								data = new ClipboardData(item);
+								fn.each(callbackList, function() {
+									if (!this.selector || (this.selector && Void0(e.target).is(this.selector))) {
+										data.trigger(this.callback);
+									}
+								});
+							}
 						}
 					}
 				});
