@@ -3188,7 +3188,6 @@
 				} catch (e) {
 					// Throw Error
 					promiseContext.rejected(promise, e);
-					catchError(promise, e);
 				}
 			} else {
 				throw new TypeError('Promise resolver ' + executor + ' is not a function');
@@ -3236,11 +3235,7 @@
 		 * @return {[type]}            [description]
 		 */
 		Promise.prototype.catch = function(callback) {
-			if (callback && fn.isCallable(callback)) {
-				this.oncatch = callback;
-				catchError(this);
-			}
-			return this;
+			return this.then(undefined, callback);
 		};
 
 		/**
@@ -3406,7 +3401,6 @@
 									// promise2 must be rejected with e as the reason.
 									// https://promisesaplus.com/#point-42
 									promiseContext.rejected(forkPromise, e);
-									catchError(forkPromise, e);
 								}
 							} else {
 								// If onFulfilled is not a function and promise1 is fulFilled,
@@ -3420,20 +3414,6 @@
 						}
 					}
 				});
-			}
-		}
-
-		function catchError(promise, errorText) {
-			if (fn.isCallable(promise.oncatch)) {
-				while (promise.pendingCatch.length) {
-					var error = promise.pendingCatch.shift();
-					promise.oncatch(error);
-				}
-				if (errorText) {
-					promise.oncatch(errorText);
-				}
-			} else {
-				promise.pendingCatch.push(errorText);
 			}
 		}
 
