@@ -1208,21 +1208,73 @@
 		 * @param	{float} t		 A timeline to calculate with the value
 		 * @return {float}
 		 */
-		CubicBezier.prototype.progress = function(value, t) {
-			if (t <= 0) {
-				return 0;
-			} else if (t >= 1) {
-				if (this.controls.length) {
-					return this.controls[this.controls.length - 1].p3.y * value;
-				} else {
-					return 0;
+		CubicBezier.prototype.calculate = function(from, to, t) {
+			var diff,
+					y,
+					valueset = {};
+
+			// progress(value, t)
+			if (!fn.isDefined(t)) {
+				t = to;
+				to = undefined;
+			}
+
+			if (!fn.isNumber(t)) {
+				throw new TypeError(t + ' is not a number');
+			}
+
+			// Let 0 <= t <= 1
+			t = Math.max(0, Math.min(1, t));
+
+			// If to value is defined
+			// Find the different if the from value is a number
+			// Set from value key-value pair match with to value to if the from value is a plain object
+			if (fn.isDefined(to)) {
+				if (fn.isNumber(from)) {
+					// Guarantee from and to is a number
+					if (!fn.isNumber(to)) {
+						throw new TypeError(to + ' is not a number');
+					}
+					diff = to - from;
+				} else if (fn.isPlainObject(from)) {
+					// Guarantee from and to is a plain object
+					if (!fn.isPlainObject(to)) {
+						throw new TypeError(to + ' is not a plain object');
+					}
+
+					// Iterate to object, and create a new from object
+					fn.each(to, function(name) {
+						if (fn.isDefined(from[name])) {
+							if (fn.isNumber(from[name])) {
+								valueset[name] = from[name];
+							}
+						} else {
+							// If from does not have the property from to, set it as 0
+							valueset[name] = 0;
+						}
+					});
+					from = valueset;
 				}
+			}
+
+			if (t == 0) {
+				// Timeline 0, return 0 if to is not defined, else return from
+				return (fn.isDefined(to)) ? from : 0;
+			} else if (t == 1) {
+				if (this.controls.length) {
+					// Timeline 1, return to if to is defined
+					// Else, get the last controls p3y to multiply with from value
+					return (fn.isDefined(to)) ? to : this.controls[this.controls.length - 1].p3.y * from;
+				}
+				// Timeline 1, return 0 if no controls exists
+				return 0;
 			}
 
 			var ctls = this.controls;
 			if (ctls.length) {
 				var step = this.lastStep;
 
+				// Find the closest timeline division in controls
 				while (ctls[step]) {
 					if (ctls[step].p0.x <= t && ctls[step].p3.x >= t) {
 						break;
@@ -1233,10 +1285,29 @@
 					}
 				}
 
+				// Save the last timeline division, it may faster to find the closest timeline division
 				this.lastStep = step;
 
-				return calcBezier(getTForX(t, ctls[step], this), ctls[step], 'y', this) * value;
+				// 1. Get the X from t, t is not the X, it is a timeline between 2 points
+				// 2. Let X as a t, the real timeline, to calculate the Y value (Newton-Raphson method)
+				y = calcBezier(getTForX(t, ctls[step]), ctls[step], 'y');
+
+				if (fn.isDefined(to)) {
+					if (fn.isPlainObject(from)) {
+						// If from is a plain object, calculate all property
+						fn.each(from, function(name) {
+							from[name] += (to[name] - from[name]) * y;
+						});
+						return from;
+					}
+
+					return (!diff) ? from : from + y * diff;
+				}
+
+				// If to is not defined, return y * from value
+				return y * from;
 			}
+
 			return 0;
 		};
 
