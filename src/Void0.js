@@ -613,7 +613,7 @@
 	(function() {
 		var canvas = doc.createElement('canvas'),
 				ctx = canvas.getContext('2d'),
-				callbackList = [],
+				eventCallbacks = [],
 				URLObj = win.URL || win.webkitURL;
 
 		function ClipboardData(object) {
@@ -668,7 +668,6 @@
 			if (!win.eventEmitters || !win.eventEmitters['paste']) {
 				Void0(win).on('paste', function(e) {
 					var clipboard = e.clipboardData || win.clipboardData;
-
 					if (clipboard) {
 						var index = 0,
 								item,
@@ -677,7 +676,7 @@
 						// IE9+ clipboardData
 						if (!clipboard.items) {
 							data = new ClipboardData(clipboard.getData('text'));
-							fn.each(callbackList, function() {
+							fn.each(eventCallbacks, function() {
 								if (!this.selector || (this.selector && Void0(e.target).is(this.selector))) {
 									data.trigger(this.callback);
 								}
@@ -685,7 +684,7 @@
 						} else {
 							while (item = clipboard.items[index++]) {
 								data = new ClipboardData(item);
-								fn.each(callbackList, function() {
+								fn.each(eventCallbacks, function() {
 									if (!this.selector || (this.selector && Void0(e.target).is(this.selector))) {
 										data.trigger(this.callback);
 									}
@@ -697,7 +696,7 @@
 			}
 
 			if (fn.isCallable(callback)) {
-				callbackList.push({
+				eventCallbacks.push({
 					callback: callback,
 					selector: selector
 				});
